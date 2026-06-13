@@ -47,6 +47,88 @@ and it's a **file-level import graph**, not a full call-site/reference resolver 
 
 ---
 
+## The agent loop (the actual point)
+
+A repo map only helps if the agent uses it. agentmap ships two hooks (in [`./hooks/`](./hooks/))
+that close the loop: the map refreshes itself after every commit, and the agent gets nudged
+to query the map before it serial-greps.
+
+### 1. Auto-refresh on commit
+
+[`hooks/post-commit`](./hooks/post-commit) rebuilds `.claude/agentmap.json` after each
+commit, detached + silenced so it never slows the commit. It skips during
+rebase/merge/cherry-pick and no-ops if Node is missing.
+
+The hooks ship inside the npm package. The simplest setup:
+
+```bash
+npx @raymondchins/agentmap --install-hooks
+```
+
+This copies `hooks/post-commit` into `.git/hooks/`, sets it executable, ensures
+`.claude/agentmap.json` is in `.gitignore`, and **auto-wires the `PreToolUse` nudge
+hook into `.claude/settings.json`** (merge-safe + idempotent) so map enforcement is
+on by default — no manual paste. Manual alternative for just the post-commit hook:
+
+```bash
+# from your repo root
+cp hooks/post-commit .git/hooks/post-commit
+chmod +x .git/hooks/post-commit
+```
+
+The hook auto-locates the builder: a local `agentmap.mjs`, then `scripts/agentmap.mjs`, then
+the installed `agentmap` binary, then `npx --no-install @raymondchins/agentmap`.
+
+### 2. Force the agent to use it — `PreToolUse` hook
+
+[`hooks/agentmap-nudge.mjs`](./hooks/agentmap-nudge.mjs) is a **non-blocking** `PreToolUse(Grep)`
+hook for Claude Code. When a `Grep` looks like a dependency / who-imports / component-usage /
+reuse search, it injects a reminder steering the agent to `agentmap --any` first. It never
+denies the grep, and stays silent for raw-string / Tailwind-class / lowercase-HTML-tag
+sweeps — so it's high-signal, not nagging.
+
+`--install-hooks` writes this into `.claude/settings.json` for you (merge-safe — it
+preserves existing settings and won't duplicate on re-run). For reference, or to wire
+it by hand:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          { "type": "command", "command": "node ./hooks/agentmap-nudge.mjs" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+That's the "forced to use it" in the tagline: the map stays current on its own, and the
+agent is steered to it the moment it reaches for a dependency-shaped grep.
+
+---
+
+## Benchmark
+
+Measured across **7 agent tasks on 3 real public repos** — reproducible with `node benchmark/bench.mjs <repo>`:
+
+| Repo | Files | Tokens saved |
+|------|------:|-------------:|
+| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | 154 | **98.3%** |
+| [colinhacks/zod](https://github.com/colinhacks/zod) | 367 | **99.2%** |
+| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | 125 | **96.0%** |
+
+Per-task peaks (real, across the three repos): **whole-repo map 99.8%**, **reuse-before-rebuild lookup 99.9%**, **blast-radius 99.2%**, **find-symbol 99%**. Cold build (parse + PageRank + symbol graph) **~1.2s**; warm cached query **~0.2s**.
+
+Honest notes: the win scales with repo size — a *trivial single-file* `--any` lookup can actually cost **more** than `cat`+`grep` (taxonomy showed −313% on that one task; we leave it in). Numbers measure **context-token volume**, not end-to-end retrieval accuracy. Token est = `chars / 4`, applied to both sides.
+
+Full methodology, per-repo tables, and all caveats: **[`./benchmark/RESULTS.md`](./benchmark/RESULTS.md)**.
+
+---
+
 ## Quickstart
 
 No install needed:
@@ -346,70 +428,6 @@ $ node agentmap.mjs --print | jq '.hubs[0]'
 
 ---
 
-## The agent loop (the actual point)
-
-A repo map only helps if the agent uses it. agentmap ships two hooks (in [`./hooks/`](./hooks/))
-that close the loop: the map refreshes itself after every commit, and the agent gets nudged
-to query the map before it serial-greps.
-
-### 1. Auto-refresh on commit
-
-[`hooks/post-commit`](./hooks/post-commit) rebuilds `.claude/agentmap.json` after each
-commit, detached + silenced so it never slows the commit. It skips during
-rebase/merge/cherry-pick and no-ops if Node is missing.
-
-The hooks ship inside the npm package. The simplest setup:
-
-```bash
-npx @raymondchins/agentmap --install-hooks
-```
-
-This copies `hooks/post-commit` into `.git/hooks/`, sets it executable, ensures
-`.claude/agentmap.json` is in `.gitignore`, and **auto-wires the `PreToolUse` nudge
-hook into `.claude/settings.json`** (merge-safe + idempotent) so map enforcement is
-on by default — no manual paste. Manual alternative for just the post-commit hook:
-
-```bash
-# from your repo root
-cp hooks/post-commit .git/hooks/post-commit
-chmod +x .git/hooks/post-commit
-```
-
-The hook auto-locates the builder: a local `agentmap.mjs`, then `scripts/agentmap.mjs`, then
-the installed `agentmap` binary, then `npx --no-install @raymondchins/agentmap`.
-
-### 2. Force the agent to use it — `PreToolUse` hook
-
-[`hooks/agentmap-nudge.mjs`](./hooks/agentmap-nudge.mjs) is a **non-blocking** `PreToolUse(Grep)`
-hook for Claude Code. When a `Grep` looks like a dependency / who-imports / component-usage /
-reuse search, it injects a reminder steering the agent to `agentmap --any` first. It never
-denies the grep, and stays silent for raw-string / Tailwind-class / lowercase-HTML-tag
-sweeps — so it's high-signal, not nagging.
-
-`--install-hooks` writes this into `.claude/settings.json` for you (merge-safe — it
-preserves existing settings and won't duplicate on re-run). For reference, or to wire
-it by hand:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Grep",
-        "hooks": [
-          { "type": "command", "command": "node ./hooks/agentmap-nudge.mjs" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-That's the "forced to use it" in the tagline: the map stays current on its own, and the
-agent is steered to it the moment it reaches for a dependency-shaped grep.
-
----
-
 ## Scope & limitations
 
 Honesty first — this is deliberately a small, sharp tool, not a universal code-graph.
@@ -433,24 +451,6 @@ Honesty first — this is deliberately a small, sharp tool, not a universal code
   `--map`/`--tokens` budgets as approximate (±10%).
 - The PreToolUse hook is **Claude Code-specific** (it speaks Claude Code's hook JSON). The
   post-commit hook is generic git.
-
----
-
-## Benchmark
-
-Measured across **7 agent tasks on 3 real public repos** — reproducible with `node benchmark/bench.mjs <repo>`:
-
-| Repo | Files | Tokens saved |
-|------|------:|-------------:|
-| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | 154 | **98.3%** |
-| [colinhacks/zod](https://github.com/colinhacks/zod) | 367 | **99.2%** |
-| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | 125 | **96.0%** |
-
-Per-task peaks (real, across the three repos): **whole-repo map 99.8%**, **reuse-before-rebuild lookup 99.9%**, **blast-radius 99.2%**, **find-symbol 99%**. Cold build (parse + PageRank + symbol graph) **~1.2s**; warm cached query **~0.2s**.
-
-Honest notes: the win scales with repo size — a *trivial single-file* `--any` lookup can actually cost **more** than `cat`+`grep` (taxonomy showed −313% on that one task; we leave it in). Numbers measure **context-token volume**, not end-to-end retrieval accuracy. Token est = `chars / 4`, applied to both sides.
-
-Full methodology, per-repo tables, and all caveats: **[`./benchmark/RESULTS.md`](./benchmark/RESULTS.md)**.
 
 ---
 
