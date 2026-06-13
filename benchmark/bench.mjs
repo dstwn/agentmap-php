@@ -10,7 +10,7 @@
 //
 //  Zero deps (only node:child_process / node:path). Targets are auto-derived
 //  from the repo (top hub file, top-ranked symbol, hub files for overview),
-//  so it is reproducible on ANY ts-morph-mappable repo, not just nalarx.
+//  so it is reproducible on ANY ts-morph-mappable repo.
 //
 //  Usage:  node benchmark/bench.mjs [<target-repo-path>]
 //          (defaults to cwd; agentmap itself is resolved next to this file)
