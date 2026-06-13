@@ -3,6 +3,15 @@
 All notable changes to agentmap are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.3] - 2026-06-14
+
+### Changed
+- **Docs only — no code change since 0.2.2.** README restructured to lead with the
+  benchmark (now a before/after table of real per-task token counts: reading files vs
+  agentmap) and the agent-loop differentiator, with plain-language section intros.
+  CI actions bumped to v5 (Node 24). Published to sync the npm package page with the
+  GitHub README.
+
 ## [0.2.2] - 2026-06-13
 
 ### Changed
@@ -68,6 +77,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   enumeration (replacing an expensive full-tree FS glob) make a full build net faster
   than v0.1.0 while indexing the same-or-more files.
 
+[0.2.3]: https://github.com/raymondchins/agentmap/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/raymondchins/agentmap/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/raymondchins/agentmap/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/raymondchins/agentmap/compare/v0.1.0...v0.2.0
