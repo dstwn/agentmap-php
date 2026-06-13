@@ -1,125 +1,111 @@
 # agentmap — token-savings benchmark results
 
-**Headline: 70.3% fewer tokens** to perform three common "understand the
-codebase" tasks when an agent queries agentmap instead of reading raw files with
-`cat` / `grep` / `find`. Measured on the public
-[vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) repo, reproducible
-with one command. Every number below is captured tool output from this run — no
-hand-tuned figures.
+**Headline: ~98% fewer tokens** (96–99.2% per repo) to perform common
+"understand the codebase" tasks when an agent queries agentmap instead of reading
+raw files with `cat` / `grep` / `find`. Measured across **7 agent tasks on 3 real
+public repos**, fully reproducible. Every number below is captured tool output —
+no hand-tuned figures.
 
-## Captured run (`bench.mjs`)
+| Repo | Files | Total saved | Standout task |
+|------|------:|------------:|---------------|
+| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | 154 | **98.3%** | reuse lookup 99.9% |
+| [colinhacks/zod](https://github.com/colinhacks/zod) | 367 | **99.2%** | whole-repo map 99.8% |
+| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | 125 | **96.0%** | reuse lookup 99.3% |
 
+Per-task peaks across the three repos: **whole-repo map 99.8%**, **reuse-before-rebuild 99.9%**, **blast-radius 99.2%**, **find-symbol 99%**.
+
+## Captured runs (`bench.mjs`)
+
+### vercel/ai-chatbot — 154 files, sha `2becdb4`
 ```
-agentmap token-savings benchmark
-repo:  github.com/vercel/ai-chatbot  (cloned to /tmp/am-sample)
-sha:   2becdb4
-env:   node v26.3.0, 154 mapped files
-est:   tokens = chars / 4
-
-Scenario                                  Baseline tok  agentmap tok  Saved %
-------------------------------------------------------------------------------
-A. Understand file deps (lib/utils.ts)            583           517    11.3%
-B. Find symbol (ChatMessage)                     1950            20      99%
-C. Repo overview (tree + cat 3 hub files)        3065          1127    63.2%
-------------------------------------------------------------------------------
-TOTAL                                            5598          1664    70.3%
-
-HEADLINE: 70.3% fewer tokens (5598 -> 1664) across 3 scenarios.
+Scenario                                       Baseline   agentmap   Saved
+A. Understand file deps (lib/utils.ts)              583        517   11.3%
+B. Find symbol (ChatMessage)                       1950         20     99%
+C. Repo overview (tree + cat 3 hub files)          3065       1127   63.2%
+D. Blast radius of lib/utils.ts (65 deps)         81038        616   99.2%
+E. Understand "api" feature (11 files)             6121       1025   83.3%
+F. Map whole repo (vs all 154 source files)      150281       1127   99.3%
+G. Reuse check "ChatMe*"                           14740         19   99.9%
+TOTAL                                            257778       4451   98.3%
 ```
 
-## What each scenario compares
+### colinhacks/zod — 367 files, sha `912f0f5`  (library monorepo; no `app/` feature → scenario E n/a)
+```
+Scenario                                       Baseline   agentmap   Saved
+A. Understand file deps (core/util.ts)             7421       1757   76.3%
+B. Find symbol (JSONSchemaGenerator)                406         98   75.9%
+C. Repo overview                                  52439        908   98.3%
+D. Blast radius (65 dependents)                  158837       1882   98.8%
+F. Map whole repo (vs all 403 source files)      586983        908   99.8%
+G. Reuse check "JSONSchema*"                       53768       1387   97.4%
+TOTAL                                            859854       6940   99.2%
+```
 
-The benchmark contrasts the bytes an agent must pull into context for a task,
-via the naive shell approach vs the equivalent single agentmap query.
+### shadcn-ui/taxonomy — 125 files, sha `298a885`
+```
+Scenario                                       Baseline   agentmap   Saved
+A. Understand file deps (lib/utils.ts)              123        508   -313%  (see caveat 2)
+B. Find symbol (Icons)                             1386         19   98.6%
+C. Repo overview                                   2082       1124     46%
+D. Blast radius (66 dependents)                   41316        608   98.5%
+E. Understand "dashboard" feature (7 files)        1993        975   51.1%
+F. Map whole repo (vs all 129 source files)       58159       1124   98.1%
+G. Reuse check "Icon*"                             4308          32   99.3%
+TOTAL                                            109367       4390   96.0%
+```
+
+## The 7 tasks
 
 | # | Task | Baseline (naive agent) | agentmap query |
 |---|------|------------------------|----------------|
-| A | Understand a file's dependencies | `cat lib/utils.ts` + `grep -rln <basename> .` (read the file + find who imports it) | `repomap.mjs --any lib/utils.ts` (exports + imports + dependents, no source body) |
-| B | Find where a symbol lives | `grep -rn ChatMessage .` (every line that mentions it) | `repomap.mjs --find ChatMessage` (definition site(s) only) |
-| C | Get a repo overview to start | `find . -name '*.ts*'` (file tree) + `cat` top-3 hub files | `repomap.mjs --map` (token-budgeted ranked symbol digest) |
+| A | Understand a file's dependencies | `cat <file>` + `grep -rln <basename>` | `--any <file>` |
+| B | Find where a symbol lives | `grep -rn <symbol>` | `--find <symbol>` |
+| C | Get a repo overview | `find` tree + `cat` top-3 hub files | `--map` |
+| D | Blast radius (what breaks if I change X) | `cat <hub>` + `cat` **every dependent file** | `--relates <hub>` |
+| E | Understand a feature | `cat` every file in the largest `app/` feature | `--map --focus <file>` |
+| F | Map the whole repo | `cat` **every** source file (full dump) | `--map` |
+| G | Reuse-before-rebuild | `grep` a name prefix + `cat` candidate files | `--find <prefix>` |
 
-Targets are **auto-derived from the repo's own map** (top hub file, top-ranked
-exported symbol, top-3 hub files for the overview), so the same script runs on
-any ts-morph-mappable repo. On vercel/ai-chatbot the auto-picked targets were:
-hub file `lib/utils.ts`, symbol `ChatMessage`.
-
-## Per-scenario baseline vs tool commands
-
-```
-[A] baseline: cat lib/utils.ts + grep -rln <basename> .
-     agentmap: repomap.mjs --any lib/utils.ts
-
-[B] baseline: grep -rn ChatMessage .
-     agentmap: repomap.mjs --find ChatMessage
-
-[C] baseline: find . -name '*.ts*' + cat 3 hub files
-     agentmap: repomap.mjs --map
-```
-
-## Reproduce it
-
-```bash
-# Clone the public target repo
-git clone https://github.com/vercel/ai-chatbot /tmp/am-sample
-
-# Run the benchmark (Node >= 18, tested on v26.3.0)
-node /path/to/agentmap/benchmark/bench.mjs /tmp/am-sample
-```
-
-Run it against any other repo by passing a different path (defaults to cwd):
-
-```bash
-node benchmark/bench.mjs /path/to/repo
-```
-
-The script is **zero-dependency** (only `node:child_process` / `node:path`). A
-machine-readable `@@JSON@@{...}` footer is appended for CI/scripting.
-
-## Environment (as captured)
-
-- **node** v26.3.0 ; **ts-morph** 28.0.0 (agentmap's single dependency)
-- **repo** `github.com/vercel/ai-chatbot` @ sha `2becdb4`
-- **mapped files** 154 (TS/TSX/JS/MJS/CJS that agentmap's ts-morph pass sees)
+Targets are **auto-derived from each repo's own map** (top hub file, top-ranked
+symbol, largest feature, etc.), so the identical script runs on any
+ts-morph-mappable repo.
 
 ## Honest caveats — read before quoting the number
 
-1. **Token estimate is `chars / 4`.** A rough heuristic (the same one agentmap
-   uses internally), not a real BPE tokenizer count. It applies to **both** sides
-   of every comparison, so the *ratio* / saved-% is far more robust than the
-   absolute token figures. The raw char counts (in the `@@JSON@@` footer) are the
-   ground truth; treat token columns as ±10%.
+1. **Token estimate is `chars / 4`** — a rough heuristic (the same one agentmap
+   uses), applied to **both** sides, so the saved-% *ratio* is robust even though
+   absolute token figures are ±10%. Raw char counts live in each run's `@@JSON@@`
+   footer.
+2. **One result is negative, and we left it in.** taxonomy scenario **A = −313%**:
+   for a *trivial single-file* dependency lookup, `cat` + a tiny `grep` is cheaper
+   than agentmap's structured block. The tool pays off **at scale** (more files,
+   more importers, more symbols) — not on a 2-line lookup. Shown, not cherry-picked.
+3. **The grep baseline is *fair*, not worst-case** — it prunes
+   `node_modules` / `.next` / `.git`. A naive unfiltered `grep -rn` would hit
+   minified bundles and inflate savings dishonestly toward 100%.
+4. **Structured vs raw.** agentmap returns *parsed* answers (dependents, ranked
+   digests); the shell baselines return *raw* lines/source the agent must still
+   read. The comparison is "bytes into context for the same question" — which
+   favors agentmap because it already did the parsing. That's the value prop.
+5. **NOT measured:** answer quality/completeness, wall-clock, end-to-end task
+   success. This measures context-token volume only.
+6. **A 4th repo (vercel/platforms) was excluded.** agentmap mapped **0 files**
+   there (unusual layout its ts-morph pass didn't pick up), so `--map` emitted
+   nothing and the "100%" was an empty-output artifact, not a real saving. Only
+   repos agentmap actually indexes are reported.
 
-2. **Single repo, single commit.** Results are from one public Next.js app
-   (154 files) at one point in time. Savings scale with repo size for scenarios B
-   and C (more files to grep / list) and with fan-in for scenario A (more
-   importers to find). A tiny repo shows smaller savings; a large monorepo,
-   larger. Re-run on your own repo before generalizing.
+## Reproduce
 
-3. **The grep baseline is deliberately *fair*, not worst-case.** It prunes
-   `node_modules` / `.next` / `.git` (`--exclude-dir`) to mirror a competent
-   agent. A naive `grep -rn <symbol> .` *without* those excludes hits minified
-   bundles and produces far more baseline tokens — a dishonest near-100%
-   "saving." The 70.3% is the prune-the-junk number.
-
-4. **Scenario equivalence is approximate.** agentmap returns *structured*
-   answers (definition sites, dependents, ranked digest); the shell baselines
-   return *raw* lines/source the agent must still parse. The comparison is "bytes
-   into context for the same question," which favors agentmap partly because it
-   has already done the parsing — that is the value prop, not a like-for-like
-   algorithmic comparison.
-
-5. **What's NOT measured here.** Answer *quality* / completeness, wall-clock
-   agent time, and end-to-end "did the agent finish the task faster." This
-   benchmark measures context-token volume only.
-
-## Machine-readable footer
-
-```
-@@JSON@@{"repo":"/tmp/am-sample","node":"v26.3.0","fileCount":154,"sha":"2becdb4","totalBaseTok":5598,"totalToolTok":1664,"savedPct":70.3,"rows":[{"name":"A. Understand file deps (lib/utils.ts)","baselineCmd":"cat lib/utils.ts + grep -rln <basename> .","toolCmd":"repomap.mjs --any lib/utils.ts","base":583,"tool":517,"baseChars":2332,"toolChars":2068},{"name":"B. Find symbol (ChatMessage)","baselineCmd":"grep -rn ChatMessage .","toolCmd":"repomap.mjs --find ChatMessage","base":1950,"tool":20,"baseChars":7800,"toolChars":80},{"name":"C. Repo overview (tree + cat 3 hub files)","baselineCmd":"find . -name '*.ts*' + cat 3 hub files","toolCmd":"repomap.mjs --map","base":3065,"tool":1127,"baseChars":12260,"toolChars":4507}]}
+```bash
+git clone https://github.com/vercel/ai-chatbot /tmp/repo
+node /path/to/agentmap/benchmark/bench.mjs /tmp/repo     # or any repo path (defaults to cwd)
 ```
 
-## Files
+Zero-dependency script (`node:child_process` / `node:path` only). Each run appends
+a machine-readable `@@JSON@@{...}` footer for CI/scripting.
 
-- benchmark script: `benchmark/bench.mjs`
-- this file: `benchmark/RESULTS.md`
-- tool under test: `repomap.mjs`
+## Environment
+
+- **node** v26.3.0 ; **ts-morph** 28.0.0 (agentmap's only dependency)
+- token est = `chars / 4`
+- repos cloned shallow at the shas listed above

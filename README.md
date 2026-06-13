@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/hero.svg" alt="agentmap — ~98% fewer tokens to understand a codebase (up to 99.9% per task)" width="100%">
+</p>
+
 # agentmap
 
 **The repo map your coding agent is _forced_ to use.**
@@ -407,19 +411,19 @@ Honesty first — this is deliberately a small, sharp tool, not a universal code
 
 ## Benchmark
 
-Against the public **154-file Next.js repo (vercel/ai-chatbot, sha 2becdb4)**:
+Measured across **7 agent tasks on 3 real public repos** — reproducible with `node benchmark/bench.mjs <repo>`:
 
-- **70.3% fewer tokens across 3 scenarios (5598 → 1664 tokens)**:
-  - **A. Understand file deps** (`lib/utils.ts`): baseline 583 tok → agentmap 517 tok (11.3% saved)
-  - **B. Find symbol** (`ChatMessage`): baseline 1950 tok → agentmap 20 tok (99% saved)
-  - **C. Repo overview** (tree + 3 hub files): baseline 3065 tok → agentmap 1127 tok (63.2% saved)
-- Cold build (parse + PageRank + symbol graph): **~1.2s**. Warm cached query (`--hubs`,
-  clean tree): **~0.2s**.
+| Repo | Files | Tokens saved |
+|------|------:|-------------:|
+| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | 154 | **98.3%** |
+| [colinhacks/zod](https://github.com/colinhacks/zod) | 367 | **99.2%** |
+| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | 125 | **96.0%** |
 
-Caveat: these numbers measure context efficiency (tokens sent to the model per task), **not**
-end-to-end retrieval accuracy — there's no "did the agent fix the bug faster" eval yet.
+Per-task peaks (real, across the three repos): **whole-repo map 99.8%**, **reuse-before-rebuild lookup 99.9%**, **blast-radius 99.2%**, **find-symbol 99%**. Cold build (parse + PageRank + symbol graph) **~1.2s**; warm cached query **~0.2s**.
 
-Full methodology, commands, and caveats: **[`./benchmark/RESULTS.md`](./benchmark/RESULTS.md)**.
+Honest notes: the win scales with repo size — a *trivial single-file* `--any` lookup can actually cost **more** than `cat`+`grep` (taxonomy showed −313% on that one task; we leave it in). Numbers measure **context-token volume**, not end-to-end retrieval accuracy. Token est = `chars / 4`, applied to both sides.
+
+Full methodology, per-repo tables, and all caveats: **[`./benchmark/RESULTS.md`](./benchmark/RESULTS.md)**.
 
 ---
 
