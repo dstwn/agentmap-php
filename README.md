@@ -14,9 +14,10 @@ in one shot instead.
 
 The payoff: ask it to *"add a field to the dashboard"* or *"fix the login bug"* and the agent's
 first move is always the same — hunt down which files are involved, what imports them, and what
-already exists so it doesn't rebuild it. agentmap answers that hunt in **~98% fewer tokens on
-average** (up to **99.9% per task**) than letting it read files one by one — via personalized
-PageRank importance, Aider-style symbol ranking, a token-budgeted digest, and a single `--any`
+already exists so it doesn't rebuild it. agentmap answers that hunt in
+**~98% fewer tokens on average** (up to **99.9% per task**) than letting it read files one by
+one — via personalized PageRank importance, Aider-style symbol ranking, a token-budgeted digest,
+and a single `--any`
 router (file → symbol → feature → live git-grep), all wired into the agent loop so it actually
 gets used, not just published.
 
