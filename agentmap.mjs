@@ -545,7 +545,7 @@ function fileBlock(key, f) {
 // ---------------------------------------------------------------------------
 // --install-hooks: copy the package post-commit hook into .git/hooks, ensure
 // .claude/agentmap.json is gitignored, and auto-wire the Claude Code
-// PreToolUse(Grep) nudge into the project's .claude/settings.json so map
+// PreToolUse(Grep|Bash) nudge into the project's .claude/settings.json so map
 // enforcement is ON by default (no manual copy-paste). Merge-safe + idempotent.
 // Throws on any failure so the caller can stderr+exit 1.
 // ---------------------------------------------------------------------------
@@ -574,11 +574,13 @@ function installHooks() {
     writeFileSync(".gitignore", IGNORE_LINE + "\n");
   }
 
-  // Auto-wire the PreToolUse(Grep) enforcement nudge into the PROJECT settings
-  // (.claude/settings.json) so "the agent is forced to use the map" is ON by
-  // default — not a manual paste. Merge-safe + idempotent: preserves any
-  // existing settings/hooks, never duplicates our entry. Uses a project-relative
-  // command so a committed settings.json stays portable across machines.
+  // Auto-wire the PreToolUse(Grep|Bash) enforcement nudge into the PROJECT
+  // settings (.claude/settings.json) so "the agent is forced to use the map"
+  // is ON by default — not a manual paste. Merge-safe + idempotent: preserves
+  // any existing settings/hooks, never duplicates our entry. Uses a project-
+  // relative command so a committed settings.json stays portable across machines.
+  // Both the Grep tool AND raw Bash searchers (grep/rg/ag/ack) are covered by
+  // a single hook file — the nudge routes internally based on tool_name.
   const NUDGE_CMD = "node node_modules/@raymondchins/agentmap/hooks/agentmap-nudge.mjs";
   const settingsPath = ".claude/settings.json";
   let settings = {};
@@ -588,11 +590,21 @@ function installHooks() {
   }
   settings.hooks ??= {};
   settings.hooks.PreToolUse ??= [];
-  const alreadyWired = settings.hooks.PreToolUse.some(
-    (e) => Array.isArray(e?.hooks) && e.hooks.some((h) => typeof h?.command === "string" && h.command.includes("agentmap-nudge")),
+  // Check whether BOTH matchers are already present.
+  const hasGrep = settings.hooks.PreToolUse.some(
+    (e) => e?.matcher === "Grep" && Array.isArray(e?.hooks) && e.hooks.some((h) => typeof h?.command === "string" && h.command.includes("agentmap-nudge")),
   );
-  if (!alreadyWired) {
+  const hasBash = settings.hooks.PreToolUse.some(
+    (e) => e?.matcher === "Bash" && Array.isArray(e?.hooks) && e.hooks.some((h) => typeof h?.command === "string" && h.command.includes("agentmap-nudge")),
+  );
+  const alreadyWired = hasGrep && hasBash;
+  if (!hasGrep) {
     settings.hooks.PreToolUse.push({ matcher: "Grep", hooks: [{ type: "command", command: NUDGE_CMD }] });
+  }
+  if (!hasBash) {
+    settings.hooks.PreToolUse.push({ matcher: "Bash", hooks: [{ type: "command", command: NUDGE_CMD }] });
+  }
+  if (!alreadyWired) {
     mkdirSync(".claude", { recursive: true });
     writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
   }
@@ -601,8 +613,8 @@ function installHooks() {
   console.log(`installed post-commit hook → ${dest}`);
   console.log(ignoredAlready ? `.gitignore already has ${IGNORE_LINE}` : `added ${IGNORE_LINE} to .gitignore`);
   console.log(alreadyWired
-    ? `${settingsPath} already wires the PreToolUse(Grep) → agentmap nudge — left as-is`
-    : `wired PreToolUse(Grep) → agentmap nudge into ${settingsPath} (map enforcement on by default)`);
+    ? `${settingsPath} already wires the PreToolUse(Grep|Bash) → agentmap nudge — left as-is`
+    : `wired PreToolUse(Grep|Bash) → agentmap nudge into ${settingsPath} (map enforcement on by default)`);
   console.log("\nDone — the map auto-refreshes on commit, and greps are nudged to agentmap first.");
 }
 

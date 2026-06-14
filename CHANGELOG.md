@@ -3,6 +3,38 @@
 All notable changes to agentmap are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-06-14
+
+### Added
+- **Bash-searcher coverage for the `PreToolUse` nudge hook.**
+  `hooks/agentmap-nudge.mjs` previously only watched the `Grep` *tool*, so any
+  search run as raw `grep`/`rg`/`egrep`/`fgrep`/`ag`/`ack` via the **Bash** tool
+  bypassed the nudge entirely — the exact gap that let an agent forget agentmap
+  and fall back to manual `Read`/`sed`/`awk`. The hook now also handles
+  `tool_name === "Bash"` with an identical fire/silence heuristic, plus a new
+  **multi-hump PascalCase symbol** rule (`ProviderCard`, `TopProviders`) that
+  catches bare identifier hunts the Grep branch never sees. The Bash branch
+  only fires when the searcher is the *primary* command (at the start of the
+  string, or after `;`/`&&`) — piped filters like `ps aux | grep node` stay
+  silent. The `--install-hooks` command now wires **both** a `Grep` and a
+  `Bash` matcher into `.claude/settings.json` (idempotent, merge-safe).
+
+- **New test file `test/nudge-hook.test.mjs`** (36 cases) drives the hook
+  directly as a subprocess, covering Grep fires/silence, Bash fires/silence,
+  PascalCase symbol detection, output shape validation, and injection safety.
+
+### Changed
+- `--install-hooks` now writes two `PreToolUse` entries — `matcher: "Grep"`
+  and `matcher: "Bash"` — both pointing at the same `agentmap-nudge.mjs`. The
+  hook dispatches internally on `tool_name`, so a single file covers both
+  surfaces with no duplication of logic.
+- The TS-generic denylist (`<Promise<`, `<Record<string`, `<Array<`, …) is no
+  longer `^`-anchored — it now suppresses a generic wherever it appears. This
+  fixes a spurious fire on the **Bash** branch (which tests the whole command,
+  e.g. `rg "<Promise<Foo>"`) and on **mid-pattern** Grep generics
+  (e.g. `useState<Promise>`). A `\b` after the type name keeps real components
+  such as `<PromiseCard` / `<MapView` firing.
+
 ## [0.2.3] - 2026-06-14
 
 ### Changed
@@ -77,6 +109,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   enumeration (replacing an expensive full-tree FS glob) make a full build net faster
   than v0.1.0 while indexing the same-or-more files.
 
+[0.3.0]: https://github.com/raymondchins/agentmap/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/raymondchins/agentmap/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/raymondchins/agentmap/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/raymondchins/agentmap/compare/v0.2.0...v0.2.1

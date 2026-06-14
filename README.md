@@ -133,15 +133,24 @@ the installed `agentmap` binary, then `npx --no-install @raymondchins/agentmap`.
 
 ### 2. Force the agent to use it — `PreToolUse` hook
 
-[`hooks/agentmap-nudge.mjs`](./hooks/agentmap-nudge.mjs) is a **non-blocking** `PreToolUse(Grep)`
-hook for Claude Code. When a `Grep` looks like a dependency / who-imports / component-usage /
-reuse search, it injects a reminder steering the agent to `agentmap --any` first. It never
-denies the grep, and stays silent for raw-string / Tailwind-class / lowercase-HTML-tag
-sweeps — so it's high-signal, not nagging.
+[`hooks/agentmap-nudge.mjs`](./hooks/agentmap-nudge.mjs) is a **non-blocking** hook for
+Claude Code that covers **both** the `Grep` tool and raw Bash text-searchers
+(`grep`/`rg`/`egrep`/`fgrep`/`ag`/`ack`). When either looks like a dependency /
+who-imports / component-usage / reuse / where-is-symbol search, it injects a reminder
+steering the agent to `agentmap --any` first. It never denies the call, and stays silent
+for raw-string / Tailwind-class / lowercase-HTML-tag sweeps and for pipe-filtered commands
+like `ps aux | grep node` — so it's high-signal, not nagging.
 
-`--install-hooks` writes this into `.claude/settings.json` for you (merge-safe — it
-preserves existing settings and won't duplicate on re-run). For reference, or to wire
-it by hand:
+**Fires on:** `import`/`require`/`export`/`from '...'` patterns, JSX component tags
+(`<Hero`, `<ProviderCard`), explicit intent words (`where is`, `who imports`, `reuse`,
+`existing component`), and — in the Bash branch — bare multi-hump PascalCase identifiers
+(`ProviderCard`, `TopProviders`) that almost always mean "where is this symbol / who uses
+it". The Bash branch only fires when the searcher is the *primary* command (at the start,
+or after `;`/`&&`); piped log-filters stay silent.
+
+`--install-hooks` writes both matchers into `.claude/settings.json` for you (merge-safe —
+preserves existing settings, won't duplicate on re-run). The single hook file dispatches
+internally on `tool_name`. For reference, or to wire it by hand:
 
 ```json
 {
@@ -149,9 +158,11 @@ it by hand:
     "PreToolUse": [
       {
         "matcher": "Grep",
-        "hooks": [
-          { "type": "command", "command": "node ./hooks/agentmap-nudge.mjs" }
-        ]
+        "hooks": [{ "type": "command", "command": "node ./hooks/agentmap-nudge.mjs" }]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "node ./hooks/agentmap-nudge.mjs" }]
       }
     ]
   }
@@ -159,7 +170,7 @@ it by hand:
 ```
 
 That's the "forced to use it" in the tagline: the map stays current on its own, and the
-agent is steered to it the moment it reaches for a dependency-shaped grep.
+agent is steered to it the moment it reaches for a dependency-shaped grep or Bash search.
 
 ---
 

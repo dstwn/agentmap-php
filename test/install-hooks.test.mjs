@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 // --install-hooks: copies hooks/post-commit into .git/hooks (chmod 0755),
 // ensures .gitignore contains .claude/agentmap.json, auto-wires the Claude Code
-// PreToolUse(Grep) nudge into .claude/settings.json (merge-safe + idempotent),
-// exits 0 on success.
+// PreToolUse(Grep) and PreToolUse(Bash) nudge hooks into .claude/settings.json
+// (merge-safe + idempotent), exits 0 on success.
+//
+// Both matchers point at the same agentmap-nudge.mjs file — the hook dispatches
+// internally on tool_name so a single file covers both the Grep tool and raw
+// Bash text-searchers (grep/rg/ag/ack).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -32,13 +36,17 @@ test("--install-hooks installs post-commit, updates .gitignore, prints snippet, 
   // Reports wiring the PreToolUse nudge.
   assert.match(r.stdout, /PreToolUse|settings\.json|agentmap/i, "expected settings wiring in output");
 
-  // Auto-wires the PreToolUse(Grep) nudge into project .claude/settings.json.
+  // Auto-wires both PreToolUse(Grep) and PreToolUse(Bash) nudges into project
+  // .claude/settings.json (both point at the same agentmap-nudge.mjs file).
   const sp = join(dir, ".claude", "settings.json");
   assert.ok(existsSync(sp), ".claude/settings.json not written");
   const s = JSON.parse(readFileSync(sp, "utf8"));
   const grepHook = (s.hooks?.PreToolUse || []).find((e) => e.matcher === "Grep");
   assert.ok(grepHook, "no PreToolUse(Grep) entry wired");
   assert.match(grepHook.hooks[0].command, /agentmap-nudge\.mjs/, "Grep hook does not point at agentmap-nudge");
+  const bashHook = (s.hooks?.PreToolUse || []).find((e) => e.matcher === "Bash");
+  assert.ok(bashHook, "no PreToolUse(Bash) entry wired");
+  assert.match(bashHook.hooks[0].command, /agentmap-nudge\.mjs/, "Bash hook does not point at agentmap-nudge");
   cleanup(dir);
 });
 
@@ -59,11 +67,13 @@ test("--install-hooks merges into existing settings.json + is idempotent", () =>
   // existing keys preserved
   assert.deepEqual(s.permissions.deny, ["Bash(rm -rf *)"], "existing permissions clobbered");
   assert.ok(s.hooks.PreToolUse.some((e) => e.matcher === "Bash"), "existing Bash hook clobbered");
-  // our Grep nudge added exactly once across two runs
-  const grep = s.hooks.PreToolUse.filter(
+  // our Grep nudge and Bash nudge each added exactly once across two runs
+  const nudgeEntries = s.hooks.PreToolUse.filter(
     (e) => Array.isArray(e.hooks) && e.hooks.some((h) => /agentmap-nudge/.test(h.command || "")),
   );
-  assert.equal(grep.length, 1, `expected exactly one agentmap-nudge entry, found ${grep.length}`);
+  assert.equal(nudgeEntries.length, 2, `expected exactly two agentmap-nudge entries (Grep + Bash), found ${nudgeEntries.length}`);
+  assert.ok(nudgeEntries.some((e) => e.matcher === "Grep"), "missing Grep matcher in nudge entries");
+  assert.ok(nudgeEntries.some((e) => e.matcher === "Bash"), "missing Bash matcher in nudge entries");
   cleanup(dir);
 });
 
