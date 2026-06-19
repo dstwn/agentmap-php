@@ -10,25 +10,44 @@ See: .planning/PROJECT.md (updated 2026-06-19)
 
 ## Active Phase
 
-**None yet** — awaiting start of Phase 1
+**None** — all 5 phases complete
 
 ## Completed Phases
 
-- None
+- Phase 1: Codebase decomposition — `src/Core/` modules created (LanguageParser, PhpParser, utils, graph, rank, cache, vue)
+- Phase 2: PHP parsing engine — tree-sitter-php parser with AST extraction for classes, interfaces, traits, enums, functions, namespaces, imports
+- Phase 3: PHP CLI integration — PHP files discovered, parsed, merged into unified graph with PageRank + symbol ranking
+- Phase 4: Laravel awareness — Route detection, facade calls, Eloquent relations, service providers
+- Phase 5: Mixed projects — TS/JS + PHP unified graph, cross-language support, 5 new test suites
+
+## Completed Phases
+
+- Phase 1: Codebase decomposition — `src/Core/` modules created (LanguageParser, PhpParser, utils, graph, rank, cache, vue)
+- Phase 2: PHP parsing engine — tree-sitter-php parser with AST extraction for classes, interfaces, traits, enums, functions, namespaces, imports
+- Phase 3: PHP CLI integration — PHP files discovered, parsed, merged into unified graph with PageRank + symbol ranking
+- Phase 4: Laravel awareness — Route detection, facade calls, Eloquent relations, service providers
+- Phase 5: Mixed projects — TS/JS + PHP unified graph, cross-language support, 5 new test suites
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Add PHP to existing Node.js codebase | Preserves all existing TS/JS functionality | ✓ Good |
-| Use tree-sitter-php for parsing | Mature, fast, Node.js bindings available | — Pending |
-| Decompose monolith during PHP work | `src/` dir already scaffolded | — Pending |
-| Public fork, not PR upstream | PHP support is fork's value | ✓ Good |
-| 5-phase execution order | Logical dependency chain | — Pending |
+| Use tree-sitter-php v0.22.6 + tree-sitter v0.22.4 | Compatible versions that work together | ✓ Good |
+| Keep agentmap.mjs intact, add PHP alongside | Avoids breaking 116 existing tests — all still pass | ✓ Good |
+| PHP files discovered via git ls-files + FS walk | Same approach as TS/JS file discovery | ✓ Good |
+| PSR-4 resolution via composer.json | Standard PHP autoloading convention | ✓ Good |
 
 ## Notes
 
-- Initial setup created: PROJECT.md, config.json, REQUIREMENTS.md, ROADMAP.md, STATE.md
-- Codebase mapped: ARCHITECTURE.md, STRUCTURE.md written to .planning/codebase/
-- Domain researched: STACK.md written to .planning/research/
-- Run `/gsd-plan-phase 1` to start Phase 1
+- All 139 tests pass (116 original + 8 PHP parser + 7 Laravel + 5 mixed project + 3 more)
+- PHP files merged into same `files` object as TS/JS — unified PageRank + symbol ranking
+- Laravel: Route::get/post/resource, facade calls (Cache::, DB::, etc.), Eloquent hasMany/belongsTo relations
+- Dependencies added: `tree-sitter@0.22.4`, `tree-sitter-php@0.22.6`
+
+## Notes
+
+- All 139 tests pass (116 original + 8 PHP parser + 7 Laravel + 5 mixed project + 3 more)
+- PHP files merged into same `files` object as TS/JS — unified PageRank + symbol ranking
+- Laravel: Route::get/post/resource, facade calls (Cache::, DB::, etc.), Eloquent hasMany/belongsTo relations
+- Dependencies added: `tree-sitter@0.22.4`, `tree-sitter-php@0.22.6`
