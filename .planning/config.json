@@ -1,0 +1,15 @@
+{
+  "workflow": {
+    "autoCommit": true,
+    "requireApproval": true,
+    "parallelResearch": true,
+    "planVerification": true
+  },
+  "research": {
+    "enabled": true,
+    "skipIfRecent": 7
+  },
+  "features": {
+    "nyquist": true
+  }
+}
