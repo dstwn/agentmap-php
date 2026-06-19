@@ -1,18 +1,19 @@
 # agentmap — token-savings benchmark results
 
-**Headline: ~98% fewer tokens** (96–99.2% per repo) to perform common
-"understand the codebase" tasks when an agent queries agentmap instead of reading
-raw files with `cat` / `grep` / `find`. Measured across **7 agent tasks on 3 real
-public repos**, fully reproducible. Every number below is captured tool output —
+**Headline: ~98–99% fewer tokens** to perform common "understand the codebase"
+tasks when an agent queries agentmap instead of reading raw files with `cat` /
+`grep` / `find`. Measured across **agent tasks on 4 real public repos** (3 TS/JS +
+1 PHP/Laravel), fully reproducible. Every number below is captured tool output —
 no hand-tuned figures.
 
-| Repo | Files | Total saved | Standout task |
-|------|------:|------------:|---------------|
-| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | 154 | **98.3%** | reuse lookup 99.9% |
-| [colinhacks/zod](https://github.com/colinhacks/zod) | 367 | **99.2%** | whole-repo map 99.8% |
-| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | 125 | **96.0%** | reuse lookup 99.3% |
+| Repo | Lang | Files | Total saved | Standout task |
+|------|------|------:|------------:|---------------|
+| [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) | TS/JS | 154 | **98.3%** | reuse lookup 99.9% |
+| [colinhacks/zod](https://github.com/colinhacks/zod) | TS/JS | 367 | **99.2%** | whole-repo map 99.8% |
+| [shadcn-ui/taxonomy](https://github.com/shadcn-ui/taxonomy) | TS/JS | 125 | **96.0%** | reuse lookup 99.3% |
+| [laravel/framework](https://github.com/laravel/framework) | PHP | 2951 | **99.6%** | whole-repo map 100% |
 
-Per-task peaks across the three repos: **whole-repo map 99.8%**, **reuse-before-rebuild 99.9%**, **blast-radius 99.2%**, **find-symbol 99%**.
+Per-task peaks across the repos: **whole-repo map 100%**, **reuse-before-rebuild 99.9%**, **blast-radius 99.7%**, **find-symbol 99%**.
 
 ## Captured runs (`bench.mjs`)
 
@@ -54,6 +55,26 @@ G. Reuse check "Icon*"                             4308          32   99.3%
 TOTAL                                            109367       4390   96.0%
 ```
 
+### laravel/framework — 2951 files, sha `a550e02`  (PHP/Laravel; framework package has no `app/` router → scenario E n/a)
+```
+Scenario                                       Baseline   agentmap   Saved
+A. Understand file deps (Macroable.php)             765        860   -12.4%  (see caveat 2)
+B. Find symbol (Collection)                      247853       8756   96.5%
+C. Repo overview (tree + cat 3 hub files)         70602       1496   97.9%
+D. Blast radius of Macroable.php (77 deps)       394103        988   99.7%
+F. Map whole repo (vs all 2951 source files)    4333074       1496    100%
+G. Reuse check "Colle*"                          161111       9493   94.1%
+TOTAL                                           5207508      23089   99.6%
+```
+
+This is the **agentmap-php** fork's headline validation: on a real ~3000-file PHP
+framework, an agent querying agentmap reads **99.6% fewer context tokens** than
+`cat`/`grep`/`find` for the same questions. The blast-radius win is the most
+striking — `Macroable` (a trait used across 77 files) costs **394K baseline tokens
+to read all dependents vs 988 with `--relates`** (99.7%). Scenario E is absent
+because `laravel/framework` is a library package with no `app/` router; a real
+Laravel *application* would exercise it.
+
 ## The 7 tasks
 
 | # | Task | Baseline (naive agent) | agentmap query |
@@ -68,7 +89,7 @@ TOTAL                                            109367       4390   96.0%
 
 Targets are **auto-derived from each repo's own map** (top hub file, top-ranked
 symbol, largest feature, etc.), so the identical script runs on any
-ts-morph-mappable repo.
+agentmap-mappable repo — TS/JS (`ts-morph`) or PHP/Laravel (`tree-sitter-php`).
 
 ## Honest caveats — read before quoting the number
 
@@ -93,6 +114,12 @@ ts-morph-mappable repo.
    there (unusual layout its ts-morph pass didn't pick up), so `--map` emitted
    nothing and the "100%" was an empty-output artifact, not a real saving. Only
    repos agentmap actually indexes are reported.
+7. **PHP files are larger on average than TS files**, which inflates the *baseline*
+   side of the PHP run (more chars to `cat`) and thus the absolute savings. The
+   saved-% *ratio* remains the honest comparison — same chars/4 heuristic on both
+   sides — but do not compare PHP and TS absolute token counts directly. Scenario E
+   (feature) is absent for `laravel/framework` because it is a library package with
+   no `app/` router; this is shown, not hidden.
 
 ## Reproduce
 
@@ -114,6 +141,14 @@ node /path/to/agentmap/benchmark/bench.mjs /tmp/zod
 git clone https://github.com/shadcn-ui/taxonomy /tmp/taxonomy
 git -C /tmp/taxonomy checkout 298a885
 node /path/to/agentmap/benchmark/bench.mjs /tmp/taxonomy
+
+# laravel/framework — sha a550e02 (PHP/Laravel)
+git clone https://github.com/laravel/framework /tmp/laravel-framework
+git -C /tmp/laravel-framework checkout a550e02
+node /path/to/agentmap-php/benchmark/bench.mjs /tmp/laravel-framework
+# …or let the fixture runner clone it for you:
+node /path/to/agentmap-php/benchmark/bench.mjs --repo laravel-framework
+# …or: npm run bench
 ```
 
 Zero-dependency script (`node:child_process` / `node:fs` / `node:path` only). Each run appends

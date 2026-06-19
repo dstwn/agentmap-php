@@ -16,15 +16,58 @@
 //          (defaults to cwd; agentmap itself is resolved next to this file)
 // ============================================================================
 import { execSync, execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REPO = resolve(process.argv[2] || process.cwd());
-const AGENTMAP = join(dirname(dirname(fileURLToPath(import.meta.url))), "agentmap.mjs");
+const SELF_DIR = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = dirname(SELF_DIR);
+const AGENTMAP = join(PROJECT_ROOT, "agentmap.mjs");
+
+// Named fixtures (parallel to eval/eval.mjs) so the bench can clone-and-run a known repo.
+// Clones are shared with the eval harness under tmp/eval/<name> to avoid a second large clone.
+const FIXTURES = {
+  "laravel-framework": "https://github.com/laravel/framework",
+  "zod": "https://github.com/colinhacks/zod",
+  "hono": "https://github.com/honojs/hono",
+};
+
+// Resolve the target repo. `--repo <name>` clones (or reuses) a named fixture; otherwise the
+// first positional arg is a path (default cwd) — preserving the original path-based invocation.
+function resolveRepo(argv) {
+  const ri = argv.indexOf("--repo");
+  if (ri >= 0 && argv[ri + 1]) {
+    const name = argv[ri + 1];
+    const url = FIXTURES[name];
+    if (!url) { console.error(`unknown --repo ${name}; choices: ${Object.keys(FIXTURES).join(", ")}`); process.exit(2); }
+    const tmp = join(PROJECT_ROOT, "tmp", "eval");
+    mkdirSync(tmp, { recursive: true });
+    const dir = join(tmp, name);
+    if (!existsSync(dir)) {
+      process.stderr.write(`  cloning ${name} (${url}) ...\n`);
+      try { execFileSync("git", ["clone", "--depth", "1", url, dir], { stdio: ["ignore", "ignore", "inherit"] }); }
+      catch { console.error(`clone failed for ${name} — network? (${url})`); process.exit(1); }
+    }
+    return dir;
+  }
+  const positional = argv.find((a) => !a.startsWith("--"));
+  return resolve(positional || process.cwd());
+}
+
+const REPO = resolveRepo(process.argv.slice(2));
 
 const tok = (s) => Math.ceil((s || "").length / 4); // chars/4 — see RESULTS.md caveat
 const pct = (base, tool) => base === 0 ? 0 : Math.round(((base - tool) / base) * 1000) / 10;
+
+// Grep --include filters. PHP extensions are included unconditionally: a TS/JS repo has no
+// .php files (baseline unaffected), while a PHP/Laravel repo now greps its source. agentmap
+// maps both languages, so a mixed repo correctly counts both sides. Keep these in sync with
+// the find -name filters in scenarios C and F.
+const GREP_INCLUDES = [
+  "--include=*.ts", "--include=*.tsx", "--include=*.js", "--include=*.jsx",
+  "--include=*.php",
+];
+const GREP_EXCLUDE_DIRS = ["--exclude-dir=node_modules", "--exclude-dir=.next", "--exclude-dir=.git", "--exclude-dir=vendor"];
 
 // Source-file grep that mirrors a COMPETENT agent: prunes build/vendor dirs so
 // the baseline isn't inflated by minified bundles in node_modules/.next. (A
@@ -79,8 +122,7 @@ function scenarioA() {
   let grepOut = "";
   try {
     grepOut = execFileSync("grep", [
-      "-rln", "--include=*.ts", "--include=*.tsx", "--include=*.js", "--include=*.jsx",
-      "--exclude-dir=node_modules", "--exclude-dir=.next", "--exclude-dir=.git",
+      "-rln", ...GREP_INCLUDES, ...GREP_EXCLUDE_DIRS,
       basename, ".",
     ], { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
   } catch (e) { grepOut = e.stdout ? e.stdout.toString() : ""; }
@@ -103,8 +145,7 @@ function scenarioB() {
   let base = "";
   try {
     base = execFileSync("grep", [
-      "-rn", "--include=*.ts", "--include=*.tsx", "--include=*.js", "--include=*.jsx",
-      "--exclude-dir=node_modules", "--exclude-dir=.next", "--exclude-dir=.git",
+      "-rn", ...GREP_INCLUDES, ...GREP_EXCLUDE_DIRS,
       SYM, ".",
     ], { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
   } catch (e) { base = e.stdout ? e.stdout.toString() : ""; }
@@ -122,7 +163,7 @@ function scenarioB() {
 // =====================================================================
 function scenarioC() {
   // find uses no repo-controlled arguments (no injection surface)
-  const tree = sh(`find . -type d \\( -name node_modules -o -name .next -o -name .git \\) -prune -o -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \\) -print`);
+  const tree = sh(`find . -type d \\( -name node_modules -o -name .next -o -name .git -o -name vendor \\) -prune -o -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.php' \\) -print`);
   let cats = "";
   // readFileSync: hub file paths come from agentmap's own map, but use safe FS read anyway
   for (const f of OVERVIEW_FILES) {
@@ -182,7 +223,7 @@ function scenarioE() {
 // =====================================================================
 function scenarioF() {
   // find uses no repo-controlled args; output paths are then read via readFileSync (no shell)
-  const list = sh(`find . -type d \\( -name node_modules -o -name .next -o -name .git \\) -prune -o -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \\) -print`).split("\n").filter(Boolean);
+  const list = sh(`find . -type d \\( -name node_modules -o -name .next -o -name .git -o -name vendor \\) -prune -o -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.php' \\) -print`).split("\n").filter(Boolean);
   if (!list.length) return null;
   let cats = "";
   // list entries are "./rel/path" from find; resolve each against REPO
@@ -207,8 +248,7 @@ function scenarioG() {
   let grep = "";
   try {
     grep = execFileSync("grep", [
-      "-rln", "--include=*.ts", "--include=*.tsx", "--include=*.js", "--include=*.jsx",
-      "--exclude-dir=node_modules", "--exclude-dir=.next", "--exclude-dir=.git",
+      "-rln", ...GREP_INCLUDES, ...GREP_EXCLUDE_DIRS,
       REUSE_PREFIX, ".",
     ], { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
   } catch (e) { grep = e.stdout ? e.stdout.toString() : ""; }

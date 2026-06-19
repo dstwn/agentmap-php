@@ -20,7 +20,8 @@
   "scripts": {
     "map": "node agentmap.mjs",
     "test": "node --test test/*.test.mjs test/**/*.test.mjs",
-    "eval": "node eval/eval.mjs"
+    "eval": "node eval/eval.mjs",
+    "bench": "node benchmark/bench.mjs --repo laravel-framework"
   },
   "engines": {
     "node": ">=18"
