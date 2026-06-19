@@ -11,7 +11,7 @@ Extend agentmap v0.9.0 to support PHP/Laravel codebases by: decomposing the mono
 - [ ] **Phase 3: PHP Commands** — Wire PHP into all CLI commands (--any, --map, --digest, --relates, --find, etc.)
 - [ ] **Phase 4: Laravel Awareness** — Facade resolution, Eloquent hierarchy, route parsing, service provider recognition
 - [ ] **Phase 5: Mixed Projects** — Cross-language graph merging and mixed TS/JS + PHP support
-- [ ] **Phase 6: Enhanced Laravel** — Blade templates, Livewire, DDD/Actions/Repository patterns, Artisan commands, middleware tracing, migrations, deeper static analysis
+- [x] **Phase 6: Enhanced Laravel** — Blade templates, Livewire, DDD/Actions/Repository patterns, Artisan commands, middleware tracing, migrations, deeper static analysis
 
 ## Phase Details
 
@@ -115,10 +115,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: Blade template parser + Livewire component recognition
-- [ ] 06-02: DDD/Actions/Repository pattern detection + Artisan commands
-- [ ] 06-03: Middleware tracing + migration/schema parsing
-- [ ] 06-04: Static analysis engine (type inference, call tracing) + tests
+- [x] 06-01: Blade template parser + Livewire component recognition
+- [x] 06-02: DDD/Actions/Repository pattern detection + Artisan commands
+- [x] 06-03: Middleware tracing + migration/schema parsing
+- [x] 06-04: Static analysis engine (type inference, call tracing) + tests
 
 ## Progress
 
@@ -131,4 +131,4 @@ Plans:
 | 3. PHP Commands | 3/3 | Complete | 2026-06-19 |
 | 4. Laravel Awareness | 3/3 | Complete | 2026-06-19 |
 | 5. Mixed Projects | 3/3 | Complete | 2026-06-19 |
-| 6. Enhanced Laravel | 0/4 | In progress | - |
+| 6. Enhanced Laravel | 4/4 | Complete | 2026-06-19 |
