@@ -29,6 +29,10 @@ const _require = createRequire(import.meta.url);
 let _tsm = null;
 const tsMorph = () => (_tsm ??= _require("ts-morph"));
 
+import { EnhancedLaravelParser as PhpParserClass } from "./src/Core/EnhancedLaravelParser.mjs";
+let _phpParser = null;
+const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.init(); return _phpParser ??= p; };
+
 const MAP = ".claude/agentmap/map.json";
 const MAP_LEGACY = ".claude/agentmap.json"; // pre-namespacing path; read for migration
 // Bumped 2 → 3: Vue SFC support. `.vue` files now appear in the map and the
@@ -98,7 +102,7 @@ const dirtyCount = () =>
     // code avoids falsely splitting a plain file whose NAME contains " -> ".
     if (/[RC]/.test(xy) && p.includes(" -> ")) p = p.split(" -> ").pop(); // rename/copy: keep new path
     p = p.replace(/^"|"$/g, "");                         // unquote space/special paths
-    return /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue)$/.test(p);
+    return /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|php)$/.test(p);
   }).length;
 const tokEst = (s) => Math.ceil((s || "").length / 4); // rough chars/4 estimate
 
@@ -110,7 +114,7 @@ const getOrSet = (m, k, make) => { let v = m.get(k); if (v === undefined) { v = 
 // without a full reparse. Skips node_modules/.git/.next. Any error ⇒ "" (caller
 // falls through to build, i.e. current behavior). Never used on the git path.
 // Includes `.vue` so editing a Vue SFC invalidates the non-git cache too.
-const SRC_EXT = /\.(ts|tsx|mts|cts|jsx|js|mjs|cjs|vue)$/;
+const SRC_EXT = /\.(ts|tsx|mts|cts|jsx|js|mjs|cjs|vue|php)$/;
 function sourceFingerprint() {
   try {
     const entries = [];
@@ -640,6 +644,98 @@ function build() {
       // edge case) must NOT abort the whole map — skip it + warn, preserving the
       // graceful-degradation contract agentmap advertises.
       process.stderr.write(`# agentmap: skipped ${path} (parse error: ${e?.message ?? e})\n`);
+    }
+  }
+  // --- PHP support: discover and parse .php files, merge into graph.
+  {
+    const phpParser = getPhpParser();
+    let phpFiles = [];
+    const cwdp = process.cwd().replace(/\\/g, "/");
+    const listed = sh("git ls-files --cached --others --exclude-standard").split("\n").filter(Boolean);
+    if (listed.length) {
+      for (const f of listed) {
+        if (f.endsWith(".php")) { const segs = f.split("/"); if (!segs.includes("node_modules") && !segs.includes("vendor")) phpFiles.push(f); }
+      }
+    } else {
+      const walk = (dir, depth) => {
+        if (depth > 40) return;
+        let names; try { names = readdirSync(dir); } catch { return; }
+        for (const name of names) {
+          if (name === "node_modules" || name === ".git" || name === "vendor" || name === ".next") continue;
+          const full = dir + "/" + name;
+          let st; try { st = lstatSync(full); } catch { continue; }
+          if (st.isSymbolicLink()) continue;
+          if (st.isDirectory()) walk(full, depth + 1);
+          else if (name.endsWith(".php")) phpFiles.push(full.replace(/^\.\//, ""));
+        }
+      };
+      walk(".", 0);
+    }
+    for (const f of phpFiles) {
+      try {
+        const absPath = join(cwdp, f);
+        const text = readFileSync(absPath, "utf8");
+        const ast = phpParser.parse(f, text);
+        const exports = phpParser.extractExports(ast);
+        const imports = phpParser.extractImports(ast);
+        const fileKey = f.replace(/\\/g, "/");
+        const phpExports = exports.map((e) => ({ name: e.name, kind: e.kind }));
+        const phpImports = [];
+        const phpImportedSymbols = {};
+        for (const imp of imports) {
+          if (imp.type === "use") {
+            const resolved = phpParser.resolveImport(imp.name, absPath, cwdp);
+            if (resolved) {
+              const targetKey = resolved.replace(cwdp + "/", "").replace(/\\/g, "/");
+              phpImports.push(targetKey);
+              const shortName = imp.name.split("\\").pop();
+              (phpImportedSymbols[targetKey] ??= []).push(shortName);
+              (dependents[targetKey] ??= []).push(fileKey);
+            }
+          }
+          if (imp.type === "include" || imp.type === "require") {
+            const resolved = phpParser.resolveImport(imp.path, absPath, cwdp);
+            if (resolved) {
+              const targetKey = resolved.replace(cwdp + "/", "").replace(/\\/g, "/");
+              phpImports.push(targetKey);
+              (phpImportedSymbols[targetKey] ??= []).push("*");
+              (dependents[targetKey] ??= []).push(fileKey);
+            }
+          }
+        }
+        const enhanced = {};
+        if (f.includes(".blade.php")) {
+          try {
+            const bladeResult = phpParser.parseBlade(f, text);
+            enhanced.blade = { directives: bladeResult.directives.length, includes: bladeResult.includes.length, livewireBindings: bladeResult.livewireBindings.length };
+          } catch {}
+        }
+        if (f.includes("/database/migrations/")) {
+          try {
+            const migResult = phpParser.parseMigration(f, text);
+            enhanced.migration = { tables: migResult.tables, columns: migResult.columns };
+          } catch {}
+        }
+        if (f.includes("/Console/Commands/") || f.endsWith("Command.php")) {
+          try {
+            const artResult = phpParser.parseArtisan(f, text);
+            enhanced.artisan = artResult.commands;
+          } catch {}
+        }
+        try {
+          const ddd = phpParser.detectDDD(f, exports);
+          if (ddd.length) enhanced.ddd = ddd;
+          const calls = phpParser.traceMethodCalls(f, ast);
+          if (calls.length) enhanced.calls = calls;
+          const types = phpParser.inferTypes(f, ast);
+          if (types.length) enhanced.types = types;
+          const mw = phpParser.detectMiddleware(f, ast);
+          if (mw.length) enhanced.middleware = mw;
+        } catch {}
+        files[fileKey] = { exports: phpExports, imports: phpImports, importedSymbols: phpImportedSymbols, dependents: dependents[fileKey] ?? [], ...(Object.keys(enhanced).length ? { enhanced } : {}) };
+      } catch (e) {
+        process.stderr.write(`# agentmap: skipped ${f} (PHP parse error: ${e?.message ?? e})\n`);
+      }
     }
   }
   // 7: resolve default-import edges. A default import was recorded literally as
