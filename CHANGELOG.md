@@ -8,7 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 First release of the **agentmap-php** fork (forked from upstream
 [agentmap](https://github.com/raymondchins/agentmap) v0.9.0). Adds first-class
 PHP and Laravel support via `tree-sitter-php` while preserving every existing
-TS/JS capability. **196/196 tests pass** (116 inherited TS/JS + 80 new PHP/Laravel/mixed).
+TS/JS capability. **194/194 tests pass** (159 inherited TS/JS + 35 new PHP/Laravel/mixed).
 
 ### Added — Codebase Decomposition
 

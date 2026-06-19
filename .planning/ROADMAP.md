@@ -109,7 +109,7 @@ Plans:
 **Depends on**: Phases 7-11
 **Requirements**: TEST-01, plus cross-cutting verification
 **Success Criteria**:
-1. `node --test` reports 196/196 pass (no regression from doc/eval/bench changes)
+1. `node --test` reports 194/194 pass (no regression from doc/eval/bench changes)
 2. Cross-references between README, RESULTS.md, and EVAL.md show consistent numbers
 3. No broken links or stale numbers in committed docs
 4. README claims match actual fixture results (no over-promising)

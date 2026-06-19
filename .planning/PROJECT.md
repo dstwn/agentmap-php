@@ -12,7 +12,7 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 
 **Shipped:** 2026-06-19 via [PR #1](https://github.com/dstwn/agentmap-php/pull/1)
 
-- 196/196 tests passing
+- 194/194 tests passing
 - Modular `src/Core/` (12 modules, 2065 LOC)
 - All v1 requirements (30/30) satisfied
 - Available languages: TS/JS, Vue SFC, PHP, Laravel (full stack)
@@ -21,7 +21,7 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 
 - **Customer:** PHP/Laravel developers using AI coding agents (Claude Code, Cursor, Copilot, etc.)
 - **Revenue model:** Open-source (MIT), public fork
-- **Success metric:** PHP/Laravel codebases pass all existing agentmap tests + new PHP-specific tests ✓ (achieved 196/196)
+- **Success metric:** PHP/Laravel codebases pass all existing agentmap tests + new PHP-specific tests ✓ (achieved 194/194)
 - **Strategy:** Public fork on GitHub; documented for the Laravel community
 
 ## Requirements
@@ -35,7 +35,7 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 - ✓ LARAV-01..04: Facade resolution, Eloquent, routes, providers — v1.0
 - ✓ LARAV-05..15: Blade, Livewire, DDD, Artisan, middleware, migrations, types, call tracing — v1.0
 - ✓ MIXED-01..02: Unified TS/JS+PHP graph, cross-language references — v1.0
-- ✓ TEST-01..05: All test suites pass (196/196) — v1.0
+- ✓ TEST-01..05: All test suites pass (194/194) — v1.0
 
 ### Active (v1.1+)
 
@@ -56,7 +56,7 @@ To be defined via `/gsd-new-milestone`. Candidate themes from REQUIREMENTS.md v2
 ## Context
 
 - **Tech stack:** Node.js >= 18, ESM modules (`.mjs`), tree-sitter (PHP + JS grammar families)
-- **Tests:** 196 passing — 116 original TS/JS, 8 PHP parser, 7 Laravel, 5 mixed, 15 enhanced Laravel, 45 hooks/install/integration
+- **Tests:** 194 passing — 159 inherited TS/JS + hooks/install/integration, 8 PHP parser, 7 Laravel, 5 mixed, 15 enhanced Laravel
 - **Architecture:** `src/Core/` plugin pattern — new languages add a parser module, no core changes
 - **Current parser stack:** EnhancedLaravelParser (PHP) → LaravelParser → PhpParser → LanguageParser
 

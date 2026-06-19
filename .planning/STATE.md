@@ -26,7 +26,7 @@ Defining requirements complete → roadmap approved → ready for `/gsd-discuss-
 
 ## Notes
 
-- All 196 tests pass (v1.0 baseline maintained)
+- All 194 tests pass (v1.0 baseline maintained)
 - v1.0 milestone archived to `.planning/milestones/v1.0-*`
 - See `.planning/MILESTONES.md` for milestone history
 - v1.1 is docs + benchmark/eval only — no source-code changes in `src/Core/`

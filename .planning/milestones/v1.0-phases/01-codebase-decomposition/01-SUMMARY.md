@@ -38,7 +38,7 @@ Extracted the monolithic `agentmap.mjs` (~1831 lines) into modular `src/Core/`:
 - `cli.mjs` — argument parsing and command dispatch
 - `utils.mjs`, `vue.mjs`, `constants.mjs` — supporting modules
 
-`agentmap.mjs` re-exports the surface area unchanged — all 116 existing TS/JS tests pass without modification.
+`agentmap.mjs` re-exports the surface area unchanged — all inherited TS/JS tests pass without modification.
 
 ## Decisions
 
@@ -50,5 +50,5 @@ Extracted the monolithic `agentmap.mjs` (~1831 lines) into modular `src/Core/`:
 
 ## Verification
 
-- 116 original TS/JS tests still pass (no behavioral regression)
+- 159 inherited TS/JS tests still pass (no behavioral regression)
 - Module structure visible at `src/Core/` (12 files, 2065 LOC including PHP/Laravel parsers)

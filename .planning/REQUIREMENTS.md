@@ -53,7 +53,7 @@ Milestone v1.1: Docs Sync + PHP Eval. Bring user-facing docs in line with v1.0 r
 
 ### Tests
 
-- [ ] **TEST-01**: All existing 196 tests still pass (no regressions)
+- [ ] **TEST-01**: All existing 194 tests still pass (no regressions)
 - [ ] **TEST-02**: New benchmark/eval scripts produce stable, reproducible numbers (pinned SHA, deterministic ordering)
 
 ## v2 Requirements

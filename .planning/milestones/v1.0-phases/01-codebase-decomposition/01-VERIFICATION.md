@@ -15,15 +15,15 @@ audit_method: retroactive
 | REQ-ID | Description | Status | Evidence |
 |--------|-------------|--------|----------|
 | DECOMP-01 | Extract monolith into src/Core/ with plugin interface | passed | `src/Core/` contains 12 modules including `language-parser.mjs` (abstract base) |
-| DECOMP-02 | All existing CLI flags and output formats unchanged | passed | 116 original TS/JS tests pass, no behavioral changes |
-| TEST-01 | All existing tests continue to pass | passed | `node --test` reports 196/196 pass (116 original + 80 new) |
+| DECOMP-02 | All existing CLI flags and output formats unchanged | passed | 159 original TS/JS tests pass, no behavioral changes |
+| TEST-01 | All existing tests continue to pass | passed | `node --test` reports 194/194 pass (159 original + 35 new) |
 
 ## Automated Verification
 
 ```
 $ node --test
-# tests 196
-# pass 196
+# tests 194
+# pass 194
 # fail 0
 ```
 

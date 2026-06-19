@@ -5,7 +5,7 @@
 **Shipped:** 2026-06-19
 **Phases:** 1-6 (all complete)
 **Plans:** 4 (Phase 6 only; Phases 1-5 retroactive)
-**Tests:** 196/196 pass
+**Tests:** 194/194 pass
 **Audit:** ✅ passed (`milestones/v1.0-MILESTONE-AUDIT.md`)
 
 ### Delivered

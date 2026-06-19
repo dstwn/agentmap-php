@@ -24,8 +24,8 @@ All existing CLI tests pass with PHP files in the file list:
 
 ```
 $ node --test
-# tests 196
-# pass 196
+# tests 194
+# pass 194
 # fail 0
 ```
 
