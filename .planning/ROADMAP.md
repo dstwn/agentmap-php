@@ -11,6 +11,7 @@ Extend agentmap v0.9.0 to support PHP/Laravel codebases by: decomposing the mono
 - [ ] **Phase 3: PHP Commands** — Wire PHP into all CLI commands (--any, --map, --digest, --relates, --find, etc.)
 - [ ] **Phase 4: Laravel Awareness** — Facade resolution, Eloquent hierarchy, route parsing, service provider recognition
 - [ ] **Phase 5: Mixed Projects** — Cross-language graph merging and mixed TS/JS + PHP support
+- [ ] **Phase 6: Enhanced Laravel** — Blade templates, Livewire, DDD/Actions/Repository patterns, Artisan commands, middleware tracing, migrations, deeper static analysis
 
 ## Phase Details
 
@@ -97,6 +98,28 @@ Plans:
 - [ ] 05-02: Add Inertia-style cross-reference detection (configurable)
 - [ ] 05-03: Write mixed-project fixture tests
 
+### Phase 6: Enhanced Laravel
+**Goal**: Comprehensive Laravel awareness — Blade templates linked to controllers, Livewire components with bindings, DDD/Actions/Repository pattern recognition, Artisan command definitions, middleware tracing, migration/schema parsing, and basic static analysis (type inference, method call tracing)
+**Depends on**: Phase 5
+**Requirements**: LARAV-05 through LARAV-15
+**Success Criteria** (what must be TRUE):
+  1. `.blade.php` files parsed — directives (@if, @foreach, @component, @livewire, etc.) extracted and linked
+  2. Livewire components recognized — class methods, `wire:model`/`wire:click` bindings traced
+  3. DDD structure detected — Domains, Actions, Repositories, Services, DTOs identified in import graph
+  4. Artisan commands parsed — `$signature`, arguments, options extracted
+  5. Middleware traced — route middleware assignments, middleware class resolution
+  6. Migration files parsed — table schemas, column types, foreign keys extracted
+  7. Basic type inference — method return types, parameter types, property types resolved
+  8. Method call tracing — controller→service→repository call chains visible in graph
+  9. All existing tests (139) still pass
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06-01: Blade template parser + Livewire component recognition
+- [ ] 06-02: DDD/Actions/Repository pattern detection + Artisan commands
+- [ ] 06-03: Middleware tracing + migration/schema parsing
+- [ ] 06-04: Static analysis engine (type inference, call tracing) + tests
+
 ## Progress
 
 **Execution Order:** Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
@@ -108,3 +131,4 @@ Plans:
 | 3. PHP Commands | 3/3 | Complete | 2026-06-19 |
 | 4. Laravel Awareness | 3/3 | Complete | 2026-06-19 |
 | 5. Mixed Projects | 3/3 | Complete | 2026-06-19 |
+| 6. Enhanced Laravel | 0/4 | In progress | - |

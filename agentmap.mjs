@@ -29,7 +29,7 @@ const _require = createRequire(import.meta.url);
 let _tsm = null;
 const tsMorph = () => (_tsm ??= _require("ts-morph"));
 
-import { PhpParser as PhpParserClass } from "./src/Core/PhpParser.mjs";
+import { EnhancedLaravelParser as PhpParserClass } from "./src/Core/EnhancedLaravelParser.mjs";
 let _phpParser = null;
 const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.init(); return _phpParser ??= p; };
 
@@ -703,7 +703,36 @@ function build() {
             }
           }
         }
-        files[fileKey] = { exports: phpExports, imports: phpImports, importedSymbols: phpImportedSymbols, dependents: dependents[fileKey] ?? [] };
+        const enhanced = {};
+        if (f.includes(".blade.php")) {
+          try {
+            const bladeResult = phpParser.parseBlade(f, text);
+            enhanced.blade = { directives: bladeResult.directives.length, includes: bladeResult.includes.length, livewireBindings: bladeResult.livewireBindings.length };
+          } catch {}
+        }
+        if (f.includes("/database/migrations/")) {
+          try {
+            const migResult = phpParser.parseMigration(f, text);
+            enhanced.migration = { tables: migResult.tables, columns: migResult.columns };
+          } catch {}
+        }
+        if (f.includes("/Console/Commands/") || f.endsWith("Command.php")) {
+          try {
+            const artResult = phpParser.parseArtisan(f, text);
+            enhanced.artisan = artResult.commands;
+          } catch {}
+        }
+        try {
+          const ddd = phpParser.detectDDD(f, exports);
+          if (ddd.length) enhanced.ddd = ddd;
+          const calls = phpParser.traceMethodCalls(f, ast);
+          if (calls.length) enhanced.calls = calls;
+          const types = phpParser.inferTypes(f, ast);
+          if (types.length) enhanced.types = types;
+          const mw = phpParser.detectMiddleware(f, ast);
+          if (mw.length) enhanced.middleware = mw;
+        } catch {}
+        files[fileKey] = { exports: phpExports, imports: phpImports, importedSymbols: phpImportedSymbols, dependents: dependents[fileKey] ?? [], ...(Object.keys(enhanced).length ? { enhanced } : {}) };
       } catch (e) {
         process.stderr.write(`# agentmap: skipped ${f} (PHP parse error: ${e?.message ?? e})\n`);
       }

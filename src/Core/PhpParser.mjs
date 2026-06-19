@@ -224,4 +224,15 @@ export class PhpParser extends LanguageParser {
     }
     return null;
   }
+
+  _findDeep(node, types, depth = 0) {
+    if (depth > 6) return null;
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (types.includes(c.type)) return c;
+      const r = this._findDeep(c, types, depth + 1);
+      if (r) return r;
+    }
+    return null;
+  }
 }

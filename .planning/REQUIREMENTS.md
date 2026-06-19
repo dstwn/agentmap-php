@@ -32,8 +32,23 @@
 
 ### Mixed Projects
 
-- [ ] **MIXED-01**: Same repo with `.ts`/`.js` and `.php` files — both parsed and merged into one graph
-- [ ] **MIXED-02**: Cross-language references detected (e.g., Inertia pages linking TS/JS components to PHP controllers)
+- [x] **MIXED-01**: Same repo with `.ts`/`.js` and `.php` files — both parsed and merged into one graph
+- [x] **MIXED-02**: Cross-language references detected (e.g., Inertia pages linking TS/JS components to PHP controllers)
+
+### Enhanced Laravel
+
+- [ ] **LARAV-05**: Parse Blade templates — extract directives (@if, @foreach, @component, @livewire, etc.)
+- [ ] **LARAV-06**: Link Blade `@extends`/`@include`/`@component` to target template files
+- [ ] **LARAV-07**: Recognize Livewire components — class properties, methods, computed properties
+- [ ] **LARAV-08**: Trace Livewire `wire:model`/`wire:click` bindings to component methods
+- [ ] **LARAV-09**: Detect DDD structure — Domains, Actions, Repositories, Services, DTOs
+- [ ] **LARAV-10**: Parse Artisan commands — `$signature`, arguments, options
+- [ ] **LARAV-11**: Trace middleware — route middleware assignments, middleware class resolution
+- [ ] **LARAV-12**: Parse migration files — table schemas, column types, foreign keys
+- [ ] **LARAV-13**: Basic type inference — method return types, parameter types, property types
+- [ ] **LARAV-14**: Method call tracing — controller→service→repository call chains
+- [ ] **LARAV-15**: Repository pattern detection — interface→implementation bindings
+- [ ] **TEST-05**: Enhanced Laravel test suite with real Laravel fixtures
 
 ### Testing & CI
 
@@ -83,16 +98,28 @@
 | LARAV-02 | Phase 4 | Pending |
 | LARAV-03 | Phase 4 | Pending |
 | LARAV-04 | Phase 4 | Pending |
-| MIXED-01 | Phase 5 | Pending |
-| MIXED-02 | Phase 5 | Pending |
-| TEST-01 | Phase 1-5 | Pending |
-| TEST-02 | Phase 2 | Pending |
-| TEST-03 | Phase 5 | Pending |
-| TEST-04 | Phase 4 | Pending |
+| MIXED-01 | Phase 5 | Complete |
+| MIXED-02 | Phase 5 | Complete |
+| TEST-01 | Phase 1-5 | Complete |
+| TEST-02 | Phase 2 | Complete |
+| TEST-03 | Phase 5 | Complete |
+| TEST-04 | Phase 4 | Complete |
+| LARAV-05 | Phase 6 | Pending |
+| LARAV-06 | Phase 6 | Pending |
+| LARAV-07 | Phase 6 | Pending |
+| LARAV-08 | Phase 6 | Pending |
+| LARAV-09 | Phase 6 | Pending |
+| LARAV-10 | Phase 6 | Pending |
+| LARAV-11 | Phase 6 | Pending |
+| LARAV-12 | Phase 6 | Pending |
+| LARAV-13 | Phase 6 | Pending |
+| LARAV-14 | Phase 6 | Pending |
+| LARAV-15 | Phase 6 | Pending |
+| TEST-05 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 19 total
-- Mapped to phases: 19
+- v1 requirements: 30 total
+- Mapped to phases: 30
 - Unmapped: 0 ✓
 
 ---

@@ -10,7 +10,7 @@ See: .planning/PROJECT.md (updated 2026-06-19)
 
 ## Active Phase
 
-**None** — all 5 phases complete
+**Phase 6: Enhanced Laravel** — Blade, Livewire, DDD/Actions/Repository patterns, Artisan, middleware, migrations, static analysis
 
 ## Completed Phases
 
