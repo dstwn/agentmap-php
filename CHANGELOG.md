@@ -3,6 +3,83 @@
 All notable changes to agentmap are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.0] - 2026-06-19 — agentmap-php fork
+
+First release of the **agentmap-php** fork (forked from upstream
+[agentmap](https://github.com/raymondchins/agentmap) v0.9.0). Adds first-class
+PHP and Laravel support via `tree-sitter-php` while preserving every existing
+TS/JS capability. **196/196 tests pass** (116 inherited TS/JS + 80 new PHP/Laravel/mixed).
+
+### Added — Codebase Decomposition
+
+- **Modular `src/Core/` architecture** — extracted the monolithic `agentmap.mjs`
+  (~1831 lines) into composable modules (`language-parser`, `PhpParser`,
+  `LaravelParser`, `EnhancedLaravelParser`, `map-builder`, `graph`, `rank`,
+  `cache`, `cli`, `utils`, `vue`, `constants`) behind a `LanguageParser` plugin
+  interface. `agentmap.mjs` re-exports the surface area unchanged — no behavioral
+  change for existing TS/JS users.
+
+### Added — PHP Parsing
+
+- **tree-sitter-php parser** — AST extraction for classes, interfaces, traits,
+  enums, functions, and namespaces. No PHP runtime required.
+- **Import resolution** — `use` / `require` / `include` resolved to import-graph edges.
+- **PSR-4 namespace resolution** via `composer.json` `autoload.psr-4`.
+- **PHP symbols in PageRank** — PHP symbols flow through the existing personalized
+  PageRank + identifier-graph ranking pipeline.
+
+### Added — PHP CLI Integration
+
+- **All commands work with PHP** — `--any`, `--map`, `--digest`, `--relates`,
+  `--find`, `--hub`, `--symbols` surface PHP results alongside TS/JS. No new flags;
+  PHP is just another language to the existing commands.
+
+### Added — Laravel Awareness
+
+- **Facade resolution** — 33 standard Laravel facades (`Cache`, `DB`, `Route`,
+  `Auth`, `Schema`, …) resolved to their underlying `Illuminate\Support\Facades\*` classes.
+- **Eloquent relations** — `hasOne`/`hasMany`/`belongsTo`/`belongsToMany`/`morphTo`/…
+  traced as graph edges between models.
+- **Route → controller links** — `routes/web.php` and `api.php` parsed;
+  `Route::get/post/resource(...)` linked to controller handlers.
+- **Service providers** — provider classes and their bindings recognized.
+
+### Added — Mixed Projects
+
+- **Unified TS/JS + PHP graph** — repos with both languages parse into a single
+  ranked graph.
+- **Cross-language references** — Inertia links between TS/JS pages and PHP
+  controllers detected as cross-language edges.
+
+### Added — Enhanced Laravel
+
+- **Blade templates** — `.blade.php` directive extraction; `@extends`/`@include`/
+  `@component` resolved to target view files.
+- **Livewire** — `@livewire('comp')` components and `wire:model`/`wire:click`
+  bindings traced.
+- **DDD / pattern detection** — Action, Domain, Repository, Service, DTO, Policy,
+  Job, Event, Listener, … detected by naming convention.
+- **Artisan commands** — `$signature` parsed into command name, arguments, options.
+- **Middleware tracing** — `->middleware()` / `Route::middleware()` chains.
+- **Migration parsing** — `Schema::create('table')` table schemas, column types,
+  foreign keys.
+- **Static analysis** — declared property/parameter/return type extraction;
+  controller→service→repository method-call tracing (shallow caller→callee pairs).
+
+### Dependencies
+
+- Added `tree-sitter@^0.22.4` and `tree-sitter-php@^0.22.6` (compatible pinned
+  versions). `ts-morph@28.0.0` retained for TS/JS — no PHP runtime needed.
+
+### Notes for upstream agentmap users
+
+- All existing CLI flags and output formats are unchanged. TS/JS behavior is
+  identical to upstream v0.9.0.
+- This fork ships from GitHub (`dstwn/agentmap-php`), not npm. The package name
+  remains `@raymondchins/agentmap` to preserve upstream attribution.
+- The `npx --no-install @raymondchins/agentmap` post-commit fallback resolves the
+  upstream **TS/JS-only** package — keep a repo-local `agentmap.mjs` for PHP support.
+
 ## [0.8.0] - 2026-06-15
 
 ### Added
