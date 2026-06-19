@@ -1,5 +1,37 @@
 # Milestones
 
+## v1.1 Docs Sync + PHP Eval
+
+**Shipped:** 2026-06-19
+**Phases:** 7-12 (all complete)
+**Plans:** 10 (2+2+1+2+2+1)
+**Tests:** 194/194 pass
+**Audit:** ✅ passed (`milestones/v1.1-MILESTONE-AUDIT.md`)
+
+### Delivered
+
+Brought all user-facing docs in line with v1.0's PHP/Laravel capabilities — README rewritten to lead with PHP/Laravel, agent skills and hooks updated, CHANGELOG populated. Produced real benchmark/eval data for `laravel/framework`: 99.6% token savings, 100%/100% symbol-def/dependents accuracy.
+
+### Key Accomplishments
+
+1. Rewrote README to lead with PHP/Laravel positioning while preserving upstream fork credit — demoted TS/JS to "inherited" status
+2. Updated agent skills, guidance, Cursor rules, and install hooks for PHP/Laravel awareness
+3. CHANGELOG v1.0 entry with full feature list grouped by category; package.json fork metadata set
+4. Extended eval/eval.mjs with PHP ground-truth resolver (declaration regex, PSR-4 `use` resolver) and Laravel fixture — 100%/100% accuracy
+5. Extended benchmark/bench.mjs with `--repo` fixture support and PHP-aware grep — 99.6% token savings on laravel/framework
+6. Verified 194/194 tests pass; corrected fabricated test count (196→194) and restored cross-doc consistency
+
+### Stats
+
+- **Commits:** 7 (aa5038f → 5045b6c)
+- **Git range:** `aa5038f` → `5045b6c`
+- **Timeline:** 2026-06-19 (single day)
+- **Constraint:** Zero changes to `src/Core/` — docs + eval/bench only
+
+### Notes
+
+All 6 phases executed with GSD workflow (discuss → plan → execute → verify). No per-phase directories archived since phases were executed inline without SUMMARY.md files. See milestone archive for full phase details.
+
 ## v1.0 PHP/Laravel Support
 
 **Shipped:** 2026-06-19
