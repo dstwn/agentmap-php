@@ -21,14 +21,14 @@ See: [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · [v1.0-REQUIREMENTS.md](mil
 
 </details>
 
-### 🚧 v1.1 Docs Sync + PHP Eval (Phases 7-12)
+### v1.1 Docs Sync + PHP Eval (Phases 7-12) — COMPLETE 2026-06-19
 
-- [ ] Phase 7: README & Branding (2 plans)
-- [ ] Phase 8: Skills & Hooks Docs (2 plans)
-- [ ] Phase 9: Release Hygiene (1 plan)
-- [ ] Phase 10: Laravel EVAL Fixture (2 plans)
-- [ ] Phase 11: Laravel BENCH Fixture (2 plans)
-- [ ] Phase 12: Verification & Polish (1 plan)
+- [x] Phase 7: README & Branding (2 plans) — completed 2026-06-19
+- [x] Phase 8: Skills & Hooks Docs (2 plans) — completed 2026-06-19
+- [x] Phase 9: Release Hygiene (1 plan) — completed 2026-06-19
+- [x] Phase 10: Laravel EVAL Fixture (2 plans) — completed 2026-06-19
+- [x] Phase 11: Laravel BENCH Fixture (2 plans) — completed 2026-06-19
+- [x] Phase 12: Verification & Polish (1 plan) — completed 2026-06-19
 
 ## Phase Details
 
@@ -129,9 +129,9 @@ Plans:
 | 4. Laravel Awareness | v1.0 | retroactive | Complete | 2026-06-19 |
 | 5. Mixed Projects | v1.0 | retroactive | Complete | 2026-06-19 |
 | 6. Enhanced Laravel | v1.0 | 4/4 | Complete | 2026-06-19 |
-| 7. README & Branding | v1.1 | 0/2 | Not started | - |
-| 8. Skills & Hooks Docs | v1.1 | 0/2 | Not started | - |
-| 9. Release Hygiene | v1.1 | 0/1 | Not started | - |
-| 10. Laravel EVAL Fixture | v1.1 | 0/2 | Not started | - |
-| 11. Laravel BENCH Fixture | v1.1 | 0/2 | Not started | - |
-| 12. Verification & Polish | v1.1 | 0/1 | Not started | - |
+| 7. README & Branding | v1.1 | 2/2 | Complete | 2026-06-19 |
+| 8. Skills & Hooks Docs | v1.1 | 2/2 | Complete | 2026-06-19 |
+| 9. Release Hygiene | v1.1 | 1/1 | Complete | 2026-06-19 |
+| 10. Laravel EVAL Fixture | v1.1 | 2/2 | Complete | 2026-06-19 |
+| 11. Laravel BENCH Fixture | v1.1 | 2/2 | Complete | 2026-06-19 |
+| 12. Verification & Polish | v1.1 | 1/1 | Complete | 2026-06-19 |
