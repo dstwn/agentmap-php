@@ -13,18 +13,33 @@ hooks/
 ```
 
 Both are pure Node/POSIX sh stdlib. The only runtime dependency is `agentmap`
-itself (`ts-morph`), used when the map (re)builds.
+itself (`ts-morph` for TS/JS, `tree-sitter` + `tree-sitter-php` for PHP), used
+when the map (re)builds. No PHP runtime is required — tree-sitter parses PHP
+source directly.
 
 ---
 
 ## 0. Prerequisites
 
 - **Node 18+** on PATH.
-- **agentmap available in the repo.** Either:
+- **agentmap-php available in the repo.** Either:
   - drop `agentmap.mjs` at the repo root (or `scripts/agentmap.mjs`), or
-  - install it: `npm i -D @raymondchins/agentmap` (then `npx @raymondchins/agentmap` works), or
-  - install it globally: `npm i -g @raymondchins/agentmap` (then `agentmap` works).
-- The repo must have a `tsconfig.json` (agentmap reads it to find source files).
+  - clone the `agentmap-php` fork and reference it: `node /path/to/agentmap-php/agentmap.mjs`.
+- **For TS/JS repos:** a `tsconfig.json` (agentmap reads it to find source files).
+- **For PHP/Laravel repos:** a `composer.json` (agentmap reads `autoload.psr-4` to
+  resolve namespaces to file paths). PHP files are discovered via `git ls-files` +
+  filesystem walk — the same mechanism as TS/JS. A repo with neither config still
+  works; PSR-4 resolution simply degrades to path-based discovery.
+
+**What gets parsed in a Laravel repo:**
+
+- `app/**/*.php` — classes, interfaces, traits, enums, Eloquent models, controllers,
+  Actions/Services/Repositories (DDD detection by convention)
+- `routes/*.php` — `web.php`, `api.php` route definitions linked to controller handlers
+- `resources/views/**/*.blade.php` — Blade directives, `@include`/`@extends`/`@component`
+  graph edges, `@livewire` components and `wire:*` bindings
+- `database/migrations/*.php` — table schemas, column types, foreign keys
+- Artisan command classes — `$signature` parsed into name/arguments/options
 
 **Caveats:**
 
@@ -37,10 +52,10 @@ itself (`ts-morph`), used when the map (re)builds.
   The hook script is POSIX sh — do **not** use bash-specific syntax if you
   customise it.
 
-Smoke-test it builds:
+Smoke-test it builds (TS/JS or PHP/Laravel — same command):
 
 ```bash
-node agentmap.mjs        # or: npx @raymondchins/agentmap
+node agentmap.mjs        # or: node /path/to/agentmap-php/agentmap.mjs
 # → agentmap: N files | M features | top hub: ...
 ```
 
@@ -136,6 +151,11 @@ chmod +x .git/hooks/post-commit
 It auto-locates the builder: `./agentmap.mjs` → `./scripts/agentmap.mjs` →
 global `agentmap` → `npx --no-install @raymondchins/agentmap`. If none is found it no-ops.
 
+> **Fork note:** the `npx --no-install @raymondchins/agentmap` fallback resolves the
+> **upstream TS/JS-only** package. Since `agentmap-php` ships from GitHub (not npm), keep a
+> repo-local `./agentmap.mjs` (or point the hook at your fork checkout) so PHP/Laravel parsing
+> is used — the npx fallback will not include PHP support.
+
 ### Verify
 
 ```bash
@@ -185,7 +205,8 @@ chmod +x "$ROOT/.git/hooks/post-commit"
 # Ignore the derived map + first build
 grep -qxF ".claude/agentmap.json" "$ROOT/.gitignore" 2>/dev/null \
   || echo ".claude/agentmap.json" >> "$ROOT/.gitignore"
-( cd "$ROOT" && { node agentmap.mjs || npx @raymondchins/agentmap; } ) || true
+# Fork ships from GitHub, not npm — prefer a repo-local agentmap.mjs (PHP-aware).
+( cd "$ROOT" && node agentmap.mjs ) || true
 
 echo "agentmap wired: PreToolUse nudge + post-commit refresh installed."
 ```

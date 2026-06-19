@@ -1,27 +1,27 @@
 ---
-description: agentmap ranked TS/JS repo map
+description: agentmap-php ranked PHP/Laravel + TS/JS repo map
 alwaysApply: true
 ---
 
-This project can use **agentmap** (`@raymondchins/agentmap`) — a queryable import/symbol map at `.claude/agentmap/`.
+This project can use **agentmap-php** — a queryable import/symbol map for PHP/Laravel and TS/JS at `.claude/agentmap.json`. Laravel-aware (facades, Eloquent, routes, Blade, Livewire, DDD, Artisan, middleware, migrations).
 
 **Before Grep/Glob for structural questions** (where is a symbol, who imports a file, reuse check, blast radius), prefer:
 
 ```bash
-agentmap --any <query>          # file → symbol → feature → git-grep fallback
-agentmap --find <Symbol>        # exported symbols matching name
-agentmap --relates <file.ts>    # imports, dependents, related files
+agentmap --any <query>          # file → symbol → feature → git-grep fallback (.ts/.js/.php/.blade.php)
+agentmap --find <Symbol>        # exported symbols / PHP classes matching name
+agentmap --relates <file>       # imports, dependents, related files (e.g. app/Models/User.php)
 agentmap --map --tokens 400     # cheap repo orientation
 ```
 
 Use Read/Grep directly when:
 
 1. agentmap already oriented you and you need exact lines to edit
-2. The map is missing — run `agentmap` once to build `.claude/agentmap/`
-3. Searching raw strings, logs, or non-TS files
+2. The map is missing — run `agentmap` once to build `.claude/agentmap.json`
+3. Searching raw strings, logs, or config values
 
 **Cursor MCP (optional):** `agentmap --mcp` exposes the same queries as tools.
 
-**Note:** `--features` only detects Next.js `app/` routes; TanStack `src/routes/` repos often show `features (0)`.
+**Note:** `--features` only detects Next.js `app/` routes; Laravel and TanStack repos often show `features (0)` — every other command still works.
 
-Package: `@raymondchins/agentmap` — not the unrelated PyPI/npm `agentmap` package.
+This is the **agentmap-php** fork (raymondchins/agentmap + tree-sitter-php) — not the unrelated PyPI/npm `agentmap` package.
