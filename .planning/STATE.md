@@ -2,44 +2,27 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19)
+See: .planning/PROJECT.md (updated 2026-06-19 after v1.0 milestone)
 
-**Core value:** Give PHP/Laravel developers the same repo-context superpower that TS/JS projects get from agentmap
+**Core value:** Give PHP/Laravel developers the same repo-context superpower TS/JS projects get from agentmap
 
-**Current focus:** All v1 phases complete — ready for v2 planning (Python/Go/Rust support, advanced analysis)
+**Current focus:** v1.0 shipped. Awaiting v1.1+ milestone planning.
 
 ## Active Phase
 
-None — Phase 6 complete. Awaiting next milestone.
+None — v1.0 milestone closed. Run `/gsd-new-milestone` to start the next cycle.
 
-## Completed Phases
+## Last Activity
 
-- Phase 1: Codebase decomposition — `src/Core/` modules created (LanguageParser, PhpParser, utils, graph, rank, cache, vue)
-- Phase 2: PHP parsing engine — tree-sitter-php parser with AST extraction for classes, interfaces, traits, enums, functions, namespaces, imports
-- Phase 3: PHP CLI integration — PHP files discovered, parsed, merged into unified graph with PageRank + symbol ranking
-- Phase 4: Laravel awareness — Route detection, facade calls, Eloquent relations, service providers
-- Phase 5: Mixed projects — TS/JS + PHP unified graph, cross-language support, 5 new test suites
-- Phase 6: Enhanced Laravel — Blade templates, Livewire bindings, DDD/Actions/Repository, Artisan, middleware, migrations, type inference, call tracing (15 new tests)
+2026-06-19 — v1.0 milestone shipped (PR #1 merged) and archived.
 
-## Key Decisions
+## Status
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Add PHP to existing Node.js codebase | Preserves all existing TS/JS functionality | Good |
-| Use tree-sitter-php v0.22.6 + tree-sitter v0.22.4 | Compatible versions that work together | Good |
-| Keep agentmap.mjs intact, add PHP alongside | Avoids breaking 116 existing tests — all still pass | Good |
-| PHP files discovered via git ls-files + FS walk | Same approach as TS/JS file discovery | Good |
-| PSR-4 resolution via composer.json | Standard PHP autoloading convention | Good |
-| Blade parsed via regex, not tree-sitter | tree-sitter-blade unmaintained; regex sufficient | Good |
-| EnhancedLaravelParser extends PhpParser | Reuses PSR-4 + AST infrastructure | Good |
-| DDD detection via filename/class substring match | Convention-over-config, Laravel idiom | Good |
-| Type inference reads PHP type hints only | Deep inference out-of-scope per REQUIREMENTS | Good |
+v1.0 PHP/Laravel Support — Complete (archived to `.planning/milestones/v1.0-*`)
 
 ## Notes
 
-- All 154 tests pass (116 original + 8 PHP parser + 7 Laravel + 5 mixed project + 3 more + 15 enhanced Laravel)
-- PHP files merged into same `files` object as TS/JS — unified PageRank + symbol ranking
-- Laravel: Route::get/post/resource, facade calls (Cache::, DB::, etc.), Eloquent hasMany/belongsTo
-- Enhanced Laravel: `.blade.php` extension, `parseBlade/Migration/Artisan`, `detectDDD/Middleware`, `traceMethodCalls`, `inferTypes`
-- Dependencies: `tree-sitter@0.22.4`, `tree-sitter-php@0.22.6`
-- Phase 6 documented retroactively from commits `25ad25f`, `6083081` on 2026-06-19
+- All 196 tests pass
+- All 30 v1 requirements satisfied
+- See `.planning/MILESTONES.md` for full milestone history
+- See `.planning/milestones/v1.0-MILESTONE-AUDIT.md` for the v1.0 audit (retroactive)

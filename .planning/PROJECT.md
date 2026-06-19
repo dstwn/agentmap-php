@@ -2,73 +2,83 @@
 
 ## What This Is
 
-A fork of [agentmap](https://github.com/raymondchins/agentmap) v0.9.0 that extends the repo-mapping tool to support PHP and Laravel codebases — providing import graphs, symbol ranking, token-budgeted context digests, and AI-agent integration for PHP projects, on par with the existing TypeScript/JavaScript support.
+A fork of [agentmap](https://github.com/raymondchins/agentmap) that extends the repo-mapping tool to PHP and Laravel codebases — providing import graphs, symbol ranking, token-budgeted context digests, Laravel-aware analysis (facades, Eloquent, routes, Blade, Livewire, DDD, Artisan, middleware, migrations), and AI-agent integration on par with TypeScript/JavaScript support.
 
 ## Core Value
 
-Give PHP/Laravel developers (and their AI coding agents) the same repo-context superpower that TS/JS projects get from agentmap — ranked import graphs, queryable code maps, and dramatically reduced token budgets for understanding a codebase.
+Give PHP/Laravel developers (and their AI coding agents) the same repo-context superpower TS/JS projects get from agentmap — ranked import graphs, queryable code maps, and dramatically reduced token budgets for understanding a codebase.
+
+## Current State (v1.0)
+
+**Shipped:** 2026-06-19 via [PR #1](https://github.com/dstwn/agentmap-php/pull/1)
+
+- 196/196 tests passing
+- Modular `src/Core/` (12 modules, 2065 LOC)
+- All v1 requirements (30/30) satisfied
+- Available languages: TS/JS, Vue SFC, PHP, Laravel (full stack)
 
 ## Business Context
 
-- **Customer**: PHP/Laravel developers using AI coding agents (Claude Code, Cursor, Copilot, etc.)
-- **Revenue model**: Open-source (MIT), public fork
-- **Success metric**: PHP/Laravel codebases pass all existing agentmap tests plus new PHP-specific tests
-- **Strategy notes**: Public fork published to npm/packagist, documented for Laravel community
+- **Customer:** PHP/Laravel developers using AI coding agents (Claude Code, Cursor, Copilot, etc.)
+- **Revenue model:** Open-source (MIT), public fork
+- **Success metric:** PHP/Laravel codebases pass all existing agentmap tests + new PHP-specific tests ✓ (achieved 196/196)
+- **Strategy:** Public fork on GitHub; documented for the Laravel community
 
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
-- Import graph for TS/JS projects (inherited)
-- PageRank hub detection (inherited)
-- Symbol ranking / identifier graph (inherited)
-- Token-budgeted repo map digest (inherited)
-- `--any` router (file → symbol → feature → live grep) (inherited)
-- MCP server (inherited)
-- Post-commit auto-refresh hook (inherited)
-- Agent nudge hooks (inherited)
-- Doctor health report (inherited)
+- ✓ DECOMP-01: Decomposed `agentmap.mjs` into `src/Core/` with plugin interface — v1.0
+- ✓ DECOMP-02: All existing CLI flags and output formats unchanged — v1.0
+- ✓ PHP-01..04: Full PHP parsing (AST, imports, PSR-4, ranking) — v1.0
+- ✓ PHP-05..07: PHP wired into all CLI commands — v1.0
+- ✓ LARAV-01..04: Facade resolution, Eloquent, routes, providers — v1.0
+- ✓ LARAV-05..15: Blade, Livewire, DDD, Artisan, middleware, migrations, types, call tracing — v1.0
+- ✓ MIXED-01..02: Unified TS/JS+PHP graph, cross-language references — v1.0
+- ✓ TEST-01..05: All test suites pass (196/196) — v1.0
 
-### Active
+### Active (v1.1+)
 
-- [ ] **PHP-01**: Parse PHP files — extract classes, functions, namespaces, imports
-- [ ] **PHP-02**: Build import graph for `.php` files (use/require/include)
-- [ ] **PHP-03**: PageRank and symbol ranking for PHP code
-- [ ] **PHP-04**: Laravel-aware analysis (facades, Eloquent, routes, service providers, Artisan commands)
-- [ ] **PHP-05**: Mixed-project support (TS/JS + PHP in same repo)
-- [ ] **PHP-06**: All existing agentmap commands work with PHP files
-- [ ] **PHP-07**: All existing tests continue to pass
-- [ ] **PHP-08**: PHP-specific test suite
+To be defined via `/gsd-new-milestone`. Candidate themes from REQUIREMENTS.md v2 section:
+
+- Python support (LANG-01)
+- Go support (LANG-02)
+- Rust support (LANG-03)
+- Full PHP type resolution beyond declared types (ADV-01)
+- Composer package dependency graph (ADV-04)
 
 ### Out of Scope
 
-- Rewriting agentmap in PHP — the core remains Node.js/TypeScript with tree-sitter-php added
-- Full PHP type system analysis — import graph + symbol ranking, not deep static analysis
-- Other languages (Python, Go, Rust, etc.) — PHP first, others later
+- Rewriting agentmap in PHP — core stays Node.js
+- Deep static type inference engine (declared types only suffice)
+- npm/Packagist publish (v1 ships as GitHub fork; publish later)
 
 ## Context
 
-- agentmap is a single-file CLI (`agentmap.mjs`, ~1831 lines) with all logic in one file — this design debt should be addressed by decomposing into `src/Core/` modules
-- Currently uses `ts-morph` (TypeScript compiler wrapper) for all language analysis — PHP support requires a different parser (tree-sitter-php)
-- The `src/` directory exists but is currently empty — intentional decomposition target
-- Laravel has specific patterns (facades, Eloquent, routes, service providers) that need special handling for meaningful symbol ranking
-- tree-sitter-php is mature and has Node.js bindings (`web-tree-sitter` or `tree-sitter` npm package)
-
-## Constraints
-
-- **Tech stack**: Node.js >= 18, ESM modules (.mjs), tree-sitter-php for parsing
-- **Compatibility**: All existing CLI flags and output formats must remain unchanged
-- **Performance**: PHP parsing must be comparable to TS/JS parsing speed
-- **Dependencies**: Minimize new dependencies — tree-sitter-php + PHP grammar is the main addition
+- **Tech stack:** Node.js >= 18, ESM modules (`.mjs`), tree-sitter (PHP + JS grammar families)
+- **Tests:** 196 passing — 116 original TS/JS, 8 PHP parser, 7 Laravel, 5 mixed, 15 enhanced Laravel, 45 hooks/install/integration
+- **Architecture:** `src/Core/` plugin pattern — new languages add a parser module, no core changes
+- **Current parser stack:** EnhancedLaravelParser (PHP) → LaravelParser → PhpParser → LanguageParser
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Add PHP to existing Node.js codebase | Preserves all existing TS/JS functionality; avoids rewriting from scratch | ✓ Good |
-| Use tree-sitter-php for parsing | Mature, fast, has Node.js bindings, already used in similar tools | — Pending |
-| Decompose monolith during PHP work | `src/` dir is already scaffolded — extract modules as part of this work | — Pending |
-| Public fork, not PR upstream | agentmap is TS/JS-only by design; PHP support is a fork's value | ✓ Good |
+| Add PHP to existing Node.js codebase | Preserves all TS/JS functionality | ✓ Good |
+| tree-sitter-php for parsing | Mature, no PHP runtime dependency | ✓ Good |
+| Decompose monolith into `src/Core/` | Plugin architecture for future languages | ✓ Good |
+| Public fork (not PR upstream) | agentmap is TS/JS-only by design | ✓ Good |
+| Blade via regex (not tree-sitter-blade) | tree-sitter-blade unmaintained | ✓ Good |
+| EnhancedLaravelParser extends PhpParser (not LaravelParser) | Avoid double-inheritance | ✓ Good |
+| DDD detection by naming convention | Laravel community follows conventions strictly | ✓ Good — projects with custom names extend `DDD_MARKERS` |
+| Type inference reads declared types only | Deep inference out-of-scope | ✓ Good |
+| Static facade map (not runtime resolution) | Stable Laravel API | ⚠️ Revisit — may need updates for new Laravel versions |
+
+## Constraints
+
+- **Compatibility:** All existing CLI flags and output formats must remain unchanged (achieved ✓)
+- **Performance:** PHP parsing comparable to TS/JS speed (achieved ✓)
+- **Dependencies:** Minimize additions — only `tree-sitter` + `tree-sitter-php` added
 
 ---
-*Last updated: 2026-06-19 after initial definition*
+*Last updated: 2026-06-19 after v1.0 milestone*
