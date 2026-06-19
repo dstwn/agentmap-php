@@ -35,9 +35,13 @@ const AGENTMAP = join(ROOT, "agentmap.mjs");
 const TMP = join(ROOT, "tmp", "eval");
 
 const FIXTURES = [
-  { name: "zod", url: "https://github.com/colinhacks/zod", sourceRoot: "packages/zod/src/v4" },
-  { name: "zustand", url: "https://github.com/pmndrs/zustand", sourceRoot: "src" },
-  { name: "hono", url: "https://github.com/honojs/hono", sourceRoot: "src" },
+  { name: "zod", url: "https://github.com/colinhacks/zod", sourceRoot: "packages/zod/src/v4", language: "ts" },
+  { name: "zustand", url: "https://github.com/pmndrs/zustand", sourceRoot: "src", language: "ts" },
+  { name: "hono", url: "https://github.com/honojs/hono", sourceRoot: "src", language: "ts" },
+  // PHP/Laravel fixture (agentmap-php). laravel/framework is large (~2000 PHP files);
+  // sourceRoot scopes ground truth to src/Illuminate. Slow — run standalone with
+  // `node eval/eval.mjs --repo laravel-framework`.
+  { name: "laravel-framework", url: "https://github.com/laravel/framework", sourceRoot: "src/Illuminate", language: "php" },
 ];
 
 // ---- arg parsing ----
@@ -52,6 +56,7 @@ const JSON_OUT = argVal("--json-out", join(TMP, "results.json"));
 
 // ---- generic helpers ----
 const SRC_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
+const PHP_EXT = new Set([".php"]);
 const SKIP_DIR = new Set(["node_modules", ".git", "dist", "build", ".next", "out", "coverage", "tmp", "vendor", "fixtures", "__fixtures__"]);
 const tokEst = (s) => Math.ceil((s || "").length / 4);
 const isTestPath = (p) =>
@@ -123,6 +128,30 @@ function listSrc(repoDir, startRel) {
       const rel = relative(repoDir, abs);
       if (!SRC_EXT.has(ext(abs))) continue;
       if (rel.endsWith(".d.ts")) continue;
+      if (isTestPath(rel)) continue;
+      out.push(rel);
+    }
+  };
+  walk(startAbs);
+  return out;
+}
+
+// PHP variant: walk for .php files, excluding tests/vendor.
+function listSrcPhp(repoDir, startRel) {
+  const startAbs = startRel ? join(repoDir, startRel) : repoDir;
+  const out = [];
+  const walk = (absDir) => {
+    let entries;
+    try { entries = readdirSync(absDir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const abs = join(absDir, e.name);
+      let st;
+      try { st = lstatSync(abs); } catch { continue; }
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) { if (!SKIP_DIR.has(e.name) && !e.name.startsWith(".")) walk(abs); continue; }
+      const rel = relative(repoDir, abs);
+      if (!PHP_EXT.has(ext(abs))) continue;
+      if (rel.endsWith(".blade.php")) continue; // Blade views aren't symbol-definition sites
       if (isTestPath(rel)) continue;
       out.push(rel);
     }
@@ -207,6 +236,97 @@ function buildImporterIndex(repoDir, srcFilesRepoWide) {
   return importers;
 }
 
+// ============================ PHP ground-truth derivation ============================
+// PHP uses a fundamentally different module model than TS/JS: there are no relative-path
+// imports. Symbols are referenced by fully-qualified class name (FQCN), and `use` statements
+// import an FQCN into a file's namespace. So the PHP ground truth is FQCN-based, resolved via
+// PSR-4 — a DIFFERENT mechanism from agentmap's tree-sitter graph, keeping the cross-check honest.
+
+// PSR-4 prefix -> dir(s), parsed from composer.json autoload + autoload-dev.
+function loadPsr4(repoDir) {
+  const map = [];
+  let comp;
+  try { comp = JSON.parse(readFileSync(join(repoDir, "composer.json"), "utf8")); } catch { return map; }
+  for (const key of ["autoload", "autoload-dev"]) {
+    const psr4 = comp?.[key]?.["psr-4"];
+    if (!psr4) continue;
+    for (const [prefix, dirs] of Object.entries(psr4)) {
+      for (const d of (Array.isArray(dirs) ? dirs : [dirs])) {
+        map.push({ prefix, dir: d.replace(/\/+$/, "") });
+      }
+    }
+  }
+  // longest prefix first so the most specific PSR-4 root wins
+  map.sort((a, b) => b.prefix.length - a.prefix.length);
+  return map;
+}
+
+// Map an FQCN to its repo-relative file path via PSR-4. laravel/framework declares
+// "Illuminate\\": "src/Illuminate/", so Illuminate\Support\Str -> src/Illuminate/Support/Str.php.
+function fqcnToFile(fqcn, psr4) {
+  const norm = fqcn.replace(/^\\+/, "");
+  for (const { prefix, dir } of psr4) {
+    const p = prefix.replace(/\\+$/, "");
+    if (p === "" || norm === p || norm.startsWith(p + "\\")) {
+      const rest = p === "" ? norm : norm.slice(p.length).replace(/^\\+/, "");
+      const sub = rest.split("\\").join("/");
+      return (dir ? dir + "/" : "") + sub + ".php";
+    }
+  }
+  return null;
+}
+
+// PHP declaration sites: class | interface | trait | enum | function (top-level).
+const PHP_DECL_RE =
+  /\b(?:abstract\s+|final\s+|readonly\s+)*(class|interface|trait|enum)\s+([A-Za-z_\x80-\xff][\w\x80-\xff]*)|\bfunction\s+([A-Za-z_\x80-\xff][\w\x80-\xff]*)\s*\(/g;
+
+const stripPhpComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1").replace(/(^|\s)#[^\n]*/g, "$1");
+
+function buildDefIndexPhp(repoDir, srcFiles) {
+  const def = new Map(); // name -> Set(relfile)
+  for (const rel of srcFiles) {
+    let txt;
+    try { txt = stripPhpComments(readFileSync(join(repoDir, rel), "utf8")); } catch { continue; }
+    PHP_DECL_RE.lastIndex = 0;
+    let m;
+    while ((m = PHP_DECL_RE.exec(txt))) {
+      const name = m[2] || m[3];
+      if (!name) continue;
+      if (!def.has(name)) def.set(name, new Set());
+      def.get(name).add(rel);
+    }
+  }
+  return def;
+}
+
+// PHP dependents: file B depends on file A when B has a `use A\FQCN;` (or `use function/const`)
+// that PSR-4-resolves to A. Build target-file -> Set(importer files).
+const PHP_USE_RE = /\buse\s+(?:function\s+|const\s+)?([A-Za-z_\x80-\xff\\][\w\x80-\xff\\]*)\s*(?:as\s+\w+)?\s*;/g;
+
+function buildImporterIndexPhp(repoDir, srcFiles, psr4) {
+  const fileSet = new Set(srcFiles);
+  const importers = new Map();
+  for (const rel of srcFiles) {
+    let txt;
+    try { txt = stripPhpComments(readFileSync(join(repoDir, rel), "utf8")); } catch { continue; }
+    const seen = new Set();
+    PHP_USE_RE.lastIndex = 0;
+    let m;
+    while ((m = PHP_USE_RE.exec(txt))) {
+      const fqcn = m[1];
+      // `use function Foo\bar` / `use const` import a symbol, not a class file; strip trailing
+      // symbol segment only for those — for plain class `use` the whole FQCN is the class.
+      const target = fqcnToFile(fqcn, psr4);
+      if (!target || target === rel || !fileSet.has(target) || seen.has(target)) continue;
+      seen.add(target);
+      if (!importers.has(target)) importers.set(target, new Set());
+      importers.get(target).add(rel);
+    }
+  }
+  return importers;
+}
+
 // ---- metric helpers ----
 const inScope = (rel, sourceRoot) => rel === sourceRoot || rel.startsWith(sourceRoot + "/");
 function setStats(got, truth) {
@@ -274,13 +394,23 @@ function evalDeps(fx, repoDir, importerIndex, srcFilesRepoWide) {
     const j = am(repoDir, ["--relates", mod]);
     const amDeps = (j && Array.isArray(j.dependents) ? j.dependents : []).filter((f) => !isTestPath(f));
     const amS = setStats(amDeps, truth);
-    // baseline: grep files that import a spec ending in this module's name (noisy on dup
-    // names). For `index.*` modules use the parent dir name, else the basename matches every
-    // barrel import. Needs PCRE (-P) for \s; escape the term for regex safety; non-test only.
-    const rawBase = basename(mod).replace(/\.[cm]?[jt]sx?$/, "");
-    const term = rawBase === "index" ? basename(dirname(mod)) : rawBase;
-    const termRe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const g = runCap("git", ["-C", repoDir, "grep", "-l", "-P", "-e", `(?:from|require\\(|import\\()\\s*['"][^'"]*/?${termRe}(?:/index)?(?:\\.[cm]?[jt]sx?)?['"]`, "--", "*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.mjs", "*.jsx"]);
+    let g;
+    if ((fx.language || "ts") === "php") {
+      // PHP baseline: grep files with a `use ...\ClassName;` statement. The class name is the
+      // file's basename (PSR-4: one class per file, named after the file). Match `use` lines
+      // ending in that class name (optionally aliased). Non-test .php files only.
+      const cls = basename(mod).replace(/\.php$/, "");
+      const clsRe = cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      g = runCap("git", ["-C", repoDir, "grep", "-l", "-P", "-e", `\\buse\\s+[\\w\\\\]*\\\\${clsRe}\\s*(?:as\\s+\\w+)?\\s*;`, "--", "*.php"]);
+    } else {
+      // baseline: grep files that import a spec ending in this module's name (noisy on dup
+      // names). For `index.*` modules use the parent dir name, else the basename matches every
+      // barrel import. Needs PCRE (-P) for \s; escape the term for regex safety; non-test only.
+      const rawBase = basename(mod).replace(/\.[cm]?[jt]sx?$/, "");
+      const term = rawBase === "index" ? basename(dirname(mod)) : rawBase;
+      const termRe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      g = runCap("git", ["-C", repoDir, "grep", "-l", "-P", "-e", `(?:from|require\\(|import\\()\\s*['"][^'"]*/?${termRe}(?:/index)?(?:\\.[cm]?[jt]sx?)?['"]`, "--", "*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.mjs", "*.jsx"]);
+    }
     const gFiles = g.stdout.split("\n").map((s) => s.trim()).filter((s) => s && s !== mod && !isTestPath(s));
     const gS = setStats(gFiles, truth);
     const amTok = tokEst(amHuman(repoDir, ["--relates", mod]));
@@ -328,19 +458,29 @@ async function main() {
 
   const perRepo = [];
   for (const fx of fixtures) {
-    process.stderr.write(`\n[${fx.name}] preparing...\n`);
+    const lang = fx.language || "ts";
+    process.stderr.write(`\n[${fx.name}] preparing... (${lang})\n`);
     const { dir, sha } = ensureClone(fx);
-    // warm agentmap cache once (builds .claude/agentmap/map.json inside the throwaway clone)
+    // warm agentmap cache once (builds .claude/agentmap.json inside the throwaway clone)
     runCap("node", [AGENTMAP, "--hubs"], { cwd: dir });
-    const srcRepoWide = listSrc(dir, "");
-    const defIndex = buildDefIndex(dir, srcRepoWide);
-    const importerIndex = buildImporterIndex(dir, srcRepoWide);
-    process.stderr.write(`  ${srcRepoWide.length} source files; ${defIndex.size} declared symbols; sourceRoot=${fx.sourceRoot}\n`);
+    let srcRepoWide, defIndex, importerIndex;
+    if (lang === "php") {
+      const psr4 = loadPsr4(dir);
+      srcRepoWide = listSrcPhp(dir, "");
+      defIndex = buildDefIndexPhp(dir, srcRepoWide);
+      importerIndex = buildImporterIndexPhp(dir, srcRepoWide, psr4);
+      process.stderr.write(`  ${srcRepoWide.length} PHP files; ${defIndex.size} declared symbols; ${psr4.length} PSR-4 roots; sourceRoot=${fx.sourceRoot}\n`);
+    } else {
+      srcRepoWide = listSrc(dir, "");
+      defIndex = buildDefIndex(dir, srcRepoWide);
+      importerIndex = buildImporterIndex(dir, srcRepoWide);
+      process.stderr.write(`  ${srcRepoWide.length} source files; ${defIndex.size} declared symbols; sourceRoot=${fx.sourceRoot}\n`);
+    }
     process.stderr.write(`  scoring symbol-definition retrieval...\n`);
     const defRows = evalDefs(fx, dir, defIndex);
     process.stderr.write(`  scoring dependents retrieval...\n`);
     const depRows = evalDeps(fx, dir, importerIndex, srcRepoWide);
-    perRepo.push({ name: fx.name, sha, sourceRoot: fx.sourceRoot, srcCount: srcRepoWide.length, defs: aggDefs(defRows), deps: aggDeps(depRows), defRows, depRows });
+    perRepo.push({ name: fx.name, language: lang, sha, sourceRoot: fx.sourceRoot, srcCount: srcRepoWide.length, defs: aggDefs(defRows), deps: aggDeps(depRows), defRows, depRows });
   }
 
   // overall (pool rows across repos)
@@ -371,8 +511,37 @@ async function main() {
 
 function writeEvalMd(today, perRepo, overall) {
   const repoTable = perRepo
-    .map((r) => `| ${r.name} | \`${r.sha.slice(0, 10)}\` | ${r.defs.n} | ${r.defs.amHit1}% / ${r.defs.amHit3}% | ${r.defs.gHit1}% / ${r.defs.gHit3}% | ${r.deps.n} | ${r.deps.amRecall}% / ${r.deps.amPrec}% | ${r.deps.gRecall}% / ${r.deps.gPrec}% |`)
+    .map((r) => `| ${r.name} | ${r.language || "ts"} | \`${r.sha.slice(0, 10)}\` | ${r.defs.n} | ${r.defs.amHit1}% / ${r.defs.amHit3}% | ${r.defs.gHit1}% / ${r.defs.gHit3}% | ${r.deps.n} | ${r.deps.amRecall}% / ${r.deps.amPrec}% | ${r.deps.gRecall}% / ${r.deps.gPrec}% |`)
     .join("\n");
+  const hasPhp = perRepo.some((r) => (r.language || "ts") === "php");
+  const phpMethod = hasPhp
+    ? `
+
+## PHP / Laravel ground truth
+
+PHP uses a different module model than TS/JS — there are no relative-path imports. Symbols are
+referenced by **fully-qualified class name** (FQCN), and \`use\` statements import an FQCN into a
+file's namespace. So the PHP ground truth is FQCN-based, derived with a **different mechanism than
+agentmap's tree-sitter-php graph** (keeping the cross-check honest):
+
+- **Symbol definition** — regex over \`class\` / \`interface\` / \`trait\` / \`enum\` / \`function\`
+  declaration sites (comments stripped first). Only globally-unique definitions in \`sourceRoot\`
+  are tested. Compared: \`agentmap --find X\` vs \`git grep -w X\`.
+- **Dependents** — file B depends on file A when B has a \`use A\\FQCN;\` statement that
+  **PSR-4-resolves** to A. PSR-4 prefixes are read from \`composer.json\` (\`autoload\` +
+  \`autoload-dev\`), longest-prefix-first. The grep baseline matches \`use …\\ClassName;\` lines
+  (the class name is the file basename — PSR-4 mandates one class per file named after it).
+
+> PHP caveats. (1) The PSR-4 resolver reads only \`composer.json\` \`psr-4\` maps — \`psr-0\`,
+> \`classmap\`, and \`files\` autoloading are not resolved (rare in modern Laravel). (2) The
+> declaration regex catches top-level \`class\`/\`function\` declarations; dynamically-defined or
+> \`eval\`'d classes are out of scope (and out of agentmap's scope too). (3) Dependents counts
+> \`use\` imports only — runtime FQCN references (\`\\Foo\\Bar::class\` written inline without a
+> \`use\`) are not counted as edges, matching agentmap's import-graph semantics. (4) Blade views
+> (\`*.blade.php\`) are excluded from symbol-definition ground truth — they are templates, not
+> declaration sites. (5) \`laravel/framework\` is large; the eval scopes ground truth to
+> \`src/Illuminate\` and samples deterministically.`
+    : "";
   const md = `# Retrieval-accuracy eval
 
 > Generated by \`npm run eval\` (\`eval/eval.mjs\`) on ${today}. Re-run to refresh.
@@ -389,44 +558,39 @@ from real public repos, then shows accuracy and token cost together.
 ## Method
 
 Ground truth is **derived at runtime** from each cloned repo (not hand-authored, so it
-can't silently rot), using a **different mechanism than agentmap's ts-morph graph** — so the
-comparison is a real cross-check, not circular:
+can't silently rot), using a **different mechanism than agentmap's parser graph** — so the
+comparison is a real cross-check, not circular. TS/JS fixtures cross-check the ts-morph graph;
+the PHP/Laravel fixture cross-checks the tree-sitter-php graph (see PHP section below):
 
 - **Symbol definition** — "where is symbol \`X\` defined?" Ground truth = the single file
-  whose source contains \`export <kind> X\` (regex over declaration sites). Only globally
+  whose source declares \`X\` (regex over declaration sites). Only globally
   unique definitions are tested (no ambiguity). Compared: \`agentmap --find X\` (exact-name
   matches, in returned order) vs naive \`git grep -n X\` (every occurrence).
   Metric: **top-1 / top-3 hit rate** (is the definition file the 1st / among the first 3
   results?).
 - **Dependents / blast radius** — "which files import module \`M\`?" Ground truth = files
-  whose relative-import specifiers **resolve** to \`M\` (a real resolver: handles TS
-  \`./x.js\`→\`x.ts\`, \`.tsx/.mts\`, \`index\` barrels, \`require\`/dynamic \`import\`,
-  re-export edges). Compared: \`agentmap --relates M\` \`.dependents\` vs naive
-  \`git grep -l\` for the module's name in import lines (for \`index.*\` modules the parent
-  dir name, so the baseline isn't strawmanned into matching every barrel). Metric:
+  whose import statements **resolve** to \`M\` (TS: a relative-import resolver; PHP: PSR-4
+  \`use\` resolution). Compared: \`agentmap --relates M\` \`.dependents\` vs a naive
+  \`git grep -l\` import-line baseline. Metric:
   **precision / recall / F1** against the resolved set.
 
 **Scope alignment (so the comparison is fair both ways):** test files (\`*.test.*\`,
-\`runtime-tests/\`, etc.) are excluded from ground truth **and** from both tools' outputs
+\`tests/\`, etc.) are excluded from ground truth **and** from both tools' outputs
 before scoring — otherwise agentmap's legitimate test-file importers would score as false
-positives. **Type-only edges** (\`import type\` / \`export type\`) are excluded from ground
+positives. **Type-only edges** (\`import type\` / \`export type\`) are excluded from TS ground
 truth, because agentmap's ts-morph graph drops them by design — counting them would penalize
 recall for a documented behaviour rather than a defect. Each fixture is scoped to a
 \`sourceRoot\`. Token cost = chars/4 of the **full default (human) output** each tool puts in
 context (same heuristic as \`RESULTS.md\`, both sides).
 
-> Caveats — read these before quoting numbers. (1) The ground-truth resolver is regex-based,
-> not a TypeScript type-checker; it is the *reference*, and a handful of exotic edges
-> (\`tsconfig\` \`paths\` aliases — none in these fixtures) may differ from a true compiler.
-> (2) Definitions tested are uniquely-declared only — the easy, unambiguous cases. (3)
+> Caveats — read these before quoting numbers. (1) The ground-truth resolvers are regex-based,
+> not a TypeScript type-checker or PHP analyzer; they are the *reference*. (2) Definitions tested
+> are uniquely-declared only — the easy, unambiguous cases. (3)
 > \`agentmap --find\` lists barrel **re-export** sites alongside the real declaration, which
 > is why top-1 trails top-3 — the definition is usually in the top 3, not always first. (4)
 > Dependents recall reflects agentmap's **value-import** graph only (type-only edges are
-> excluded from truth to match it); a separate "type-aware" mode would be needed to retrieve
-> type-only importers. (5) Feature-level retrieval (\`--feature\`) is **not** scored — these
-> are libraries with no \`app/\` routes, so the route-based feature detector is empty; that
-> needs a Next.js-style app fixture (TODO). (6) Numbers move with upstream repos; resolved
-> SHAs are recorded below.
+> excluded from truth to match it). (5) Feature-level retrieval (\`--feature\`) is **not** scored.
+> (6) Numbers move with upstream repos; resolved SHAs are recorded below.${phpMethod}
 
 ## Results
 
@@ -446,16 +610,17 @@ actually costs **more** tokens than \`grep -l\` because it returns the full blas
 
 ### Per fixture
 
-| Repo | commit | def n | agentmap top1/top3 | grep top1/top3 | deps n | agentmap recall/prec | grep recall/prec |
-|---|---|---|---|---|---|---|---|
+| Repo | lang | commit | def n | agentmap top1/top3 | grep top1/top3 | deps n | agentmap recall/prec | grep recall/prec |
+|---|---|---|---|---|---|---|---|---|
 ${repoTable}
 
 ## Reproduce
 
 \`\`\`bash
-npm run eval                 # all fixtures
+npm run eval                         # all fixtures (TS/JS + Laravel)
 node eval/eval.mjs --repo zod --sample 40
-node eval/eval.mjs --refresh # re-clone upstreams
+node eval/eval.mjs --repo laravel-framework  # PHP/Laravel fixture standalone
+node eval/eval.mjs --refresh         # re-clone upstreams
 \`\`\`
 
 Clones land in \`tmp/eval/\` (gitignored). Network required; not part of CI.
