@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "description": "The repo map your coding agent is forced to use — estimated ~98% fewer context tokens (up to ~99.9% per task, chars/4 estimate) to understand a TS/JS codebase. A queryable, ranked ts-morph code-relationship map: PageRank hubs, Aider-style symbol ranking, a token-budgeted digest, and a single --any router (file → symbol → feature → live git-grep), wired into the agent loop via post-commit auto-refresh and a PreToolUse hook.",
+  "description": "A fork of agentmap adding PHP/Laravel support — the repo map your coding agent is forced to use. Estimated ~98% fewer context tokens to understand a PHP/Laravel or TS/JS codebase. A queryable, ranked code-relationship map (tree-sitter-php + ts-morph): PageRank hubs, symbol ranking, token-budgeted digest, a single --any router, Laravel awareness (facades, Eloquent, routes, Blade, Livewire, DDD, Artisan, middleware, migrations), wired into the agent loop via post-commit auto-refresh and a PreToolUse hook.",
   "type": "module",
   "bin": {
     "agentmap": "agentmap.mjs"
@@ -35,6 +35,13 @@
     "repo-map",
     "repomap",
     "code-map",
+    "tree-sitter",
+    "tree-sitter-php",
+    "php",
+    "laravel",
+    "blade",
+    "livewire",
+    "eloquent",
     "ts-morph",
     "typescript",
     "javascript",
@@ -52,12 +59,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/raymondchins/agentmap.git"
+    "url": "git+https://github.com/dstwn/agentmap-php.git"
   },
-  "homepage": "https://github.com/raymondchins/agentmap#readme",
+  "homepage": "https://github.com/dstwn/agentmap-php#readme",
   "bugs": {
-    "url": "https://github.com/raymondchins/agentmap/issues"
+    "url": "https://github.com/dstwn/agentmap-php/issues"
   },
-  "author": "Raymond Surya Chin",
+  "author": "Raymond Surya Chin (original); agentmap-php fork by dstwn",
   "license": "MIT"
 }

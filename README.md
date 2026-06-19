@@ -2,29 +2,44 @@
   <img src="assets/hero.png" alt="agentmap — ~98% token savings to understand a codebase (up to 99.9% per task)" width="100%">
 </p>
 
-# agentmap
+# agentmap-php
 
-**The repo map your coding agent is _forced_ to use — ~98% fewer context tokens to understand your TS/JS codebase.**
+**The repo map your coding agent is _forced_ to use — now for PHP and Laravel, on par with TS/JS.**
 
 Your AI coding agent re-learns your codebase every session — opening files and grepping to find
-what connects to what, burning tokens before it writes a line. agentmap gives it a **queryable,
-ranked code-relationship map for TypeScript/JavaScript repos** instead — a `ts-morph` import/symbol
-graph ranked by personalized PageRank. Ask it to *"add a field"* or *"fix the login bug"* and it
-finds the right files, their imports, and what already exists in
-**~98% fewer context tokens on average** (up to **~99.9% per task**; figures are chars/4 estimates applied equally to both sides) — kept current by a post-commit
-auto-refresh and actually used via a `PreToolUse(Grep)` hook.
+what connects to what, burning tokens before it writes a line. **agentmap-php** gives it a
+**queryable, ranked code-relationship map for PHP/Laravel repos** (and TypeScript/JavaScript too) —
+a tree-sitter import/symbol graph ranked by personalized PageRank. Ask it to *"add a field to the
+User model"* or *"fix the checkout action"* and it finds the right files, their imports, Eloquent
+relations, Blade includes, and what already exists in **~98% fewer context tokens** — kept current
+by a post-commit auto-refresh and actually used via a `PreToolUse(Grep)` hook.
 
-[![npm](https://img.shields.io/npm/v/@raymondchins/agentmap)](https://www.npmjs.com/package/@raymondchins/agentmap)
-[![CI](https://github.com/raymondchins/agentmap/actions/workflows/ci.yml/badge.svg)](https://github.com/raymondchins/agentmap/actions/workflows/ci.yml)
+**Laravel-aware out of the box:** facade resolution, Eloquent model hierarchy, route → controller
+links, service-provider bindings, Blade `@include`/`@extends` graphs, Livewire `wire:*` bindings,
+DDD / Action / Repository / Service detection, Artisan command signatures, middleware tracing,
+migration schemas, and declared-type + method-call tracing.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](#)
 
-> One file, one runtime dependency (`ts-morph`, which bundles the TypeScript compiler — ~10 MB installed). No vector DB, no embedding API, no server.
-> `npx @raymondchins/agentmap --any <query>` and you have a ranked answer.
+> **A fork of [agentmap](https://github.com/raymondchins/agentmap) by Raymond Surya Chin.** The
+> upstream tool is TS/JS-only (`ts-morph`); this fork adds first-class PHP and Laravel support via
+> `tree-sitter-php` while preserving every existing TS/JS capability. All credit for the original
+> design, PageRank ranking, `--any` router, and agent-loop wiring goes upstream.
+
+> Two runtime dependencies (`ts-morph` for TS/JS, `tree-sitter` + `tree-sitter-php` for PHP). No
+> vector DB, no embedding API, no server, no PHP runtime required — tree-sitter parses PHP source
+> directly. `node agentmap.mjs --any <query>` and you have a ranked answer for either language.
 
 ---
 
 ## Benchmark
+
+> **Note on the benchmark below:** these figures are the **upstream TS/JS** numbers, run on a
+> Next.js repo. They demonstrate the ranking + digest mechanism this fork inherits unchanged.
+> **PHP/Laravel benchmark figures** (token savings on a real Laravel codebase) and **PHP
+> retrieval-accuracy** numbers live in [`./benchmark/RESULTS.md`](./benchmark/RESULTS.md) and
+> [`EVAL.md`](./EVAL.md) respectively — see those files for the Laravel-specific data.
 
 Every task you hand a coding agent starts with the same hidden step — *find the relevant code*.
 Here's the token cost of that step, **reading raw files vs querying agentmap**, on a real 154-file
@@ -96,16 +111,41 @@ agent toward *before* it falls back to serial grep.
 | | **agentmap** | Aider repo map | RepoMapper | Repomix | code2prompt |
 | --- | --- | --- | --- | --- | --- |
 | **Ranking algorithm** | Personalized PageRank (file + symbol graphs) | PageRank (graph ranking) | Importance heuristics | None (file order) | None (file order) |
-| **Languages** | TS/JS (via ts-morph) | Many (tree-sitter) | Many (tree-sitter) | Language-agnostic (text) | Language-agnostic (text) |
+| **Languages** | **TS/JS (ts-morph) + PHP/Laravel (tree-sitter-php)** | Many (tree-sitter) | Many (tree-sitter) | Language-agnostic (text) | Language-agnostic (text) |
 | **Token-budget output** | Yes — `--map [--tokens N]` ranked digest | Yes (built into Aider's context) | Partial | Yes (size caps) | Yes (templates/caps) |
 | **Agent-loop integration** | **Yes — post-commit auto-refresh + PreToolUse hook** | In-process (Aider only) | No | No | No |
-| **Dependencies** | `ts-morph` only | Python + tree-sitter stack | Python + tree-sitter | Node | Rust binary |
-| **Install** | `npx @raymondchins/agentmap` | `pip install aider` | `pip install` | `npx`/global | `cargo`/binary |
+| **Dependencies** | `ts-morph` + `tree-sitter` + `tree-sitter-php` | Python + tree-sitter stack | Python + tree-sitter | Node | Rust binary |
+| **Install** | `node agentmap.mjs` (GitHub fork) | `pip install aider` | `pip install` | `npx`/global | `cargo`/binary |
 
-What that table is **not** claiming: agentmap is TS/JS-only (the others are multi-language),
-and it's a **file-level import graph**, not a full call-site/reference resolver (see
-[Scope & limitations](#scope--limitations)). The differentiators are narrow and honest:
-**(1)** the `--any` router, and **(2)** the agent-loop wiring. Everything else is table stakes.
+What that table is **not** claiming: agentmap-php is a **file-level import graph**, not a full
+call-site/reference resolver (see [Scope & limitations](#scope--limitations)). The differentiators
+are narrow and honest: **(1)** PHP/Laravel awareness on par with the TS/JS original, **(2)** the
+`--any` router, and **(3)** the agent-loop wiring. Everything else is table stakes.
+
+---
+
+## PHP & Laravel awareness
+
+This fork's reason to exist. Beyond the base PHP import graph (classes, interfaces, traits, enums,
+functions, namespaces, `use`/`require`, PSR-4 via `composer.json`), agentmap-php recognizes
+Laravel's conventions so the ranked map reflects how Laravel apps actually wire together:
+
+| Capability | What it surfaces |
+|------------|------------------|
+| **Facade resolution** | `Cache::`, `DB::`, `Route::`, `Auth::` … resolved to their underlying `Illuminate\Support\Facades\*` classes |
+| **Eloquent relations** | `hasMany` / `belongsTo` / `morphTo` / … traced as graph edges between models |
+| **Routes → controllers** | `routes/web.php` + `api.php` parsed; `Route::get('/x', [C::class, 'm'])` links URIs to handlers |
+| **Service providers** | provider classes and their bindings recognized |
+| **Blade templates** | `.blade.php` directives extracted; `@extends`/`@include`/`@component` resolved to target view files |
+| **Livewire** | `@livewire('comp')` components + `wire:model` / `wire:click` bindings traced |
+| **DDD / patterns** | Action, Domain, Repository, Service, DTO, Policy, Job, Event, Listener, … detected by convention |
+| **Artisan commands** | `$signature` parsed into command name, arguments, and options |
+| **Middleware** | `->middleware()` / `Route::middleware()` chains traced |
+| **Migrations** | `Schema::create('table')` + column types + foreign keys extracted |
+| **Static analysis** | declared property/parameter/return types; controller→service→repository call tracing |
+
+Mixed repos (TS/JS frontend + PHP/Laravel backend) parse into **one unified graph** — Inertia
+references between TS/JS pages and PHP controllers are detected as cross-language edges.
 
 ---
 
@@ -226,13 +266,13 @@ Pair with `--install-hooks` (Claude Code) or `--mcp` (Cursor MCP).
 
 ## Quickstart
 
-No install needed:
+This fork ships from GitHub (not npm). Clone it, then run against any repo:
 
 ```bash
-npx @raymondchins/agentmap --any <query>
+node /path/to/agentmap-php/agentmap.mjs --any <query>
 ```
 
-…or run it directly from a checkout:
+…or run it directly from a checkout of the repo you're mapping:
 
 ```bash
 node agentmap.mjs --any <query>
@@ -240,7 +280,7 @@ node agentmap.mjs --any <query>
 
 The first run builds and caches the map to `.claude/agentmap.json` (add it to
 `.gitignore`). Subsequent runs serve the cache when the tree is clean and `HEAD` is
-unchanged, and silently rebuild from disk when there are uncommitted `.ts/.tsx/.js/...`
+unchanged, and silently rebuild from disk when there are uncommitted `.ts/.tsx/.js/.php/.blade.php`
 edits — so queries always reflect your in-flight work.
 
 Run with no flag to build + print a one-line summary:
@@ -248,6 +288,22 @@ Run with no flag to build + print a one-line summary:
 ```
 $ node agentmap.mjs
 agentmap: 154 files | 4 features | top hub: lib/utils.ts (deg 52, pr 0.105171)
+```
+
+**On a Laravel app** the same commands surface PHP/Laravel structure:
+
+```bash
+# Where is a model / controller / action defined?
+node agentmap.mjs --any UserController
+
+# Reuse check before writing a new action or repository
+node agentmap.mjs --find Repository
+
+# Blast radius of a model — who relates to it (Eloquent + imports)
+node agentmap.mjs --relates app/Models/User.php
+
+# Token-budgeted ranked digest of the whole Laravel app
+node agentmap.mjs --map --tokens 400
 ```
 
 ---
@@ -531,21 +587,26 @@ $ node agentmap.mjs --print | jq '.hubs[0]'
 
 Honesty first — this is deliberately a small, sharp tool, not a universal code-graph.
 
-- **TS/JS only, by design.** Built on `ts-morph`. No Python, Go, Rust, etc. If your repo
-  isn't TypeScript/JavaScript, use a tree-sitter-based tool instead. Support for other
-  languages is a possible future direction.
+- **TS/JS (via `ts-morph`) and PHP/Laravel (via `tree-sitter-php`).** No Python, Go, Rust, etc.
+  yet — those are a possible future direction. For other languages, use a tree-sitter-based tool.
 - **File-level import graph, not a full reference graph.** Edges come from static
-  `import` / re-export declarations and the named symbols crossing them. It does **not**
+  `import` / `use` / re-export declarations and the named symbols crossing them. It does **not**
   do call-site or full reference resolution — `--relates` tells you which files import a
-  module, not every line that calls a given function.
+  module, not every line that calls a given function. (PHP method-call tracing is shallow:
+  caller→callee pairs, not a resolved call graph.)
+- **PHP type inference is declared-types-only.** Property, parameter, and return type *hints* are
+  extracted as written; there is no type-flow analysis through assignments or returns.
+- **Blade parsing is regex-based directive extraction**, not a full Blade compiler — it reliably
+  detects directives and `@include`/`@extends`/`@livewire` targets, but does not evaluate nested
+  PHP expressions inside directive arguments.
+- **Laravel DDD detection is convention-based** (class/dir naming: `*Action`, `*Repository`,
+  `*Service`, `Domains/`, …). Projects using non-standard names can extend the marker list.
 - **PageRank + symbol ranking are real and implemented** (damping 0.85, deterministic
   power iteration; personalized variants for `--relates` and `--map --focus`). The symbol
   ranking is a faithful port of Aider's identifier-graph approach (credit:
   [Aider](https://github.com/Aider-AI/aider), Apache-2.0).
-- **Feature detection assumes the Next.js `app/` router.** `--feature` / `--features`
-  derive features from the first real route segment under `app/` (or `src/app/`), skipping
-  route groups `(...)`, dynamic `[...]`, and parallel `@...` segments. Repos without an
-  `app/` directory simply report zero features — every other command still works.
+- **Feature detection assumes the Next.js `app/` router.** Repos without an `app/` directory
+  simply report zero features — every other command still works (PHP/Laravel included).
 - **Token counts are estimates** (`chars / 4`), not a real BPE tokenizer. Treat
   `--map`/`--tokens` budgets as approximate (±10%).
 - The PreToolUse hook is **Claude Code-specific** (it speaks Claude Code's hook JSON). The
