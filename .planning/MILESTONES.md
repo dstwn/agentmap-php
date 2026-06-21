@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.3 CI Integration Testing (Shipped: 2026-06-21)
+
+**Phases completed:** 3 phases (17-19), 5 plans, 10 tasks
+
+**Key accomplishments:**
+
+- Fixed CI glob bug silently skipping 43 tests (`test/vue-sfc/`) — CI now uses `npm test` for deterministic glob expansion; all 260 tests run on Node 18/20/22 matrix
+- Added `test/integration-laravel.test.mjs` — 4 integration tests running real CLI against laravel/framework fixture (`--packages`, `--types`, `--legacy`, skip-guard); CI clones fixture on node-20 leg only
+- Added c8@11.0.0 coverage reporting — captures src/Core/ at 88.64% stmts via subprocess boundary; lcov.info uploaded as CI artifact; threshold enforcement deferred to v1.4 (baseline now known)
+
+---
+
 ## v1.2 PHP Type Resolution + Composer Dependency Graph (Shipped: 2026-06-21)
 
 **Phases completed:** 4 phases, 10 plans, 21 tasks
