@@ -33,12 +33,19 @@ import { EnhancedLaravelParser as PhpParserClass } from "./src/Core/EnhancedLara
 let _phpParser = null;
 const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.init(); return _phpParser ??= p; };
 
+import { TypeResolver } from "./src/Core/TypeResolver.mjs";
+import { ComposerParser } from "./src/Core/ComposerParser.mjs";
+import { LegacyDetector } from "./src/Core/LegacyDetector.mjs";
+import { DEFAULT_CHAIN_DEPTH } from "./src/Core/constants.mjs";
+
 const MAP = ".claude/agentmap/map.json";
 const MAP_LEGACY = ".claude/agentmap.json"; // pre-namespacing path; read for migration
 // Bumped 2 → 3: Vue SFC support. `.vue` files now appear in the map and the
 // source-discovery / freshness checks treat them as first-class source files.
 // Old caches (schema 2) are ignored so the first run after upgrade rebuilds.
-const SCHEMA_VERSION = 3;
+// Bumped 3 → 4: PHP packages, legacyWarnings, and type data (assignedTypes,
+// phpDocTypes, chainTypes) now in map. Package nodes carry pagerank field.
+const SCHEMA_VERSION = 4;
 
 // ---------------------------------------------------------------------------
 // Tuning constants — KEEP THESE VALUES IDENTICAL (output + marketing must not
@@ -57,6 +64,7 @@ const DEFAULT_BUDGET = 8192;     // --map token budget with no --focus
 const FOCUS_BUDGET = 1024;       // --map token budget when --focus is given
 const HUBS_LIMIT = 15;           // # of hubs persisted/printed
 const RANKED_SYMBOLS_LIMIT = 80; // # of ranked symbols persisted
+const PKG_EDGE_CAP = 1000;        // max package→file edges per package (CMP-04 edge explosion guard)
 const CONTENT_LINES_LIMIT = 40;  // # of git-grep lines shown in the --any content fallback
 const RELATED_LIMIT = 10;        // # of related files shown by --relates
 const SYMS_PER_FILE = 8;         // per-file symbol cap in the --map digest
@@ -738,6 +746,50 @@ function build() {
       }
     }
   }
+  // --- TypeResolver: enrich PHP file entries with assignedTypes + phpDocTypes + chainTypes.
+  // composerResult is hoisted to build() scope so CMP-04 package→PageRank edges can use it.
+  let _composerResultForBuild = null;
+  {
+    const typeResolver = new TypeResolver();
+    const cwdp = process.cwd().replace(/\\/g, "/");
+    let psr4Map = {};
+    try {
+      const cp = new ComposerParser();
+      const parsed = cp.parse(process.cwd());
+      _composerResultForBuild = parsed;
+      psr4Map = parsed?.psr4Map ?? {};
+    } catch (_) { /* no composer.json — degrade gracefully */ }
+    for (const [filePath, entry] of Object.entries(files)) {
+      if (!filePath.endsWith(".php") || filePath.includes("/vendor/")) continue;
+      try {
+        const text = readFileSync(filePath, "utf8");
+        const { assignedTypes, phpDocTypes } = typeResolver.resolve(filePath, text, {}, cwdp);
+        const chainDepthLimit = (typeof config?.chainDepth === "number") ? config.chainDepth : DEFAULT_CHAIN_DEPTH;
+        const chainTypes = typeResolver.resolveChain(
+          typeResolver._lastRoot,
+          typeResolver._lastUseMap,
+          assignedTypes,
+          psr4Map,
+          cwdp,
+          chainDepthLimit
+        );
+        entry.assignedTypes = assignedTypes;
+        entry.phpDocTypes = phpDocTypes;
+        entry.chainTypes = chainTypes;
+        if (entry.enhanced?.types) {
+          entry.enhanced.types = entry.enhanced.types.map(t => ({
+            ...t,
+            confidence: "HIGH",
+            source: "declared",
+          }));
+        }
+      } catch (_) {
+        entry.assignedTypes = [];
+        entry.phpDocTypes = [];
+        entry.chainTypes = [];
+      }
+    }
+  }
   // 7: resolve default-import edges. A default import was recorded literally as
   // "default"; rankSymbols skips "default", so default-exported symbols (the
   // dominant Next.js component) never ranked. Map each "default" entry to the
@@ -757,8 +809,47 @@ function build() {
   for (const [p, f] of Object.entries(files))
     for (const tp of f.imports)
       if (files[tp]) fileEdges.push({ from: p, to: tp, weight: (f.importedSymbols[tp] || []).length || 1 });
-  const fileRank = pagerank(nodes, fileEdges);
+
+  // --- CMP-04: Package→file PageRank edge merging.
+  // Add synthetic package nodes to the graph so packages get their own PageRank score.
+  // Edges: each PHP source file that depends on a package gets an edge → package node.
+  // Weight: 0.1× average direct import weight (subtle boost, per CONTEXT.md locked decision).
+  // Cap: 1000 edges per package to prevent edge explosion on large projects.
+  const pkgNodes = []; // synthetic package node ids
+  const rawPkgs = _composerResultForBuild?.packages ?? [];
+  const requirePkgs = rawPkgs.filter(p => p.type === "require");
+  if (requirePkgs.length > 0) {
+    const phpSrcFiles = Object.keys(files).filter(p => p.endsWith(".php") && !p.includes("/vendor/"));
+    const avgWeight = fileEdges.length > 0
+      ? fileEdges.reduce((s, e) => s + e.weight, 0) / fileEdges.length
+      : 1;
+    const pkgEdgeWeight = +(avgWeight * 0.1).toFixed(6) || 0.1;
+    for (const pkg of requirePkgs) {
+      const pkgNode = `__pkg__${pkg.to}`;
+      pkgNodes.push(pkgNode);
+      // Add edges from PHP source files → package node (up to PKG_EDGE_CAP per package)
+      let edgeCount = 0;
+      for (const srcFile of phpSrcFiles) {
+        if (edgeCount >= PKG_EDGE_CAP) {
+          process.stderr.write(`# agentmap: package edge cap reached for ${pkg.to} (${PKG_EDGE_CAP} edges)\n`);
+          break;
+        }
+        fileEdges.push({ from: srcFile, to: pkgNode, weight: pkgEdgeWeight });
+        edgeCount++;
+      }
+    }
+  }
+
+  const allNodes = [...nodes, ...pkgNodes];
+  const fileRank = pagerank(allNodes, fileEdges);
   for (const p of nodes) files[p].pagerank = +(fileRank[p] || 0).toFixed(6);
+
+  // Attach pagerank to each package entry (for --packages and --print output).
+  const packagesWithRank = rawPkgs.map(pkg => {
+    const pkgNode = `__pkg__${pkg.to}`;
+    const pr = fileRank[pkgNode];
+    return pr !== undefined ? { ...pkg, pagerank: +(pr).toFixed(6) } : pkg;
+  });
 
   // --- Symbol ranking (Aider-style): identifier graph from named imports.
   const rankedSymbols = rankSymbols(files, null);
@@ -774,12 +865,26 @@ function build() {
   // persisting so the on-disk `files` shape stays stable.
   for (const p of nodes) delete files[p].defaultExportName;
 
+  // --- LegacyDetector: detect non-PSR-4 / legacy code indicators.
+  let legacyWarningsForBuild = [];
+  try {
+    const cr = _composerResultForBuild;
+    legacyWarningsForBuild = new LegacyDetector().detect(
+      process.cwd(),
+      cr?.psr4Map ?? {},
+      cr?.classmaps ?? [],
+      cr?.autoFiles ?? []
+    );
+  } catch (_) { /* degrade gracefully */ }
+
   const sha = currentSha();
   const out = {
     schema: SCHEMA_VERSION, generatedSha: sha, dirty: dirtyCount(), fileCount: nodes.length,
     // fingerprint lets non-git repos (sha === "") trust the cache across runs.
     fingerprint: sha ? undefined : sourceFingerprint(),
     hubs, features, rankedSymbols: rankedSymbols.slice(0, RANKED_SYMBOLS_LIMIT), files,
+    packages: packagesWithRank,
+    legacyWarnings: legacyWarningsForBuild,
   };
   mkdirSync(".claude/agentmap", { recursive: true });
   // Atomic write: tmp + rename so a concurrent background rebuild can never
@@ -1574,13 +1679,14 @@ const KNOWN = new Set([
   "--dry-run", "--setup-mcp", "--mcp",
   "--any", "--find", "--relates", "--map", "--focus", "--tokens",
   "--symbols", "--feature", "--features", "--hubs",
+  "--packages", "--types", "--legacy", "--all",
 ]);
 
 // A token consumed as the VALUE of a value-taking flag is never itself a flag —
 // so a dash-leading query like `--any "-O/bin/sh"` is bound as the query, not
 // mistaken for an unknown flag. (arg() already rejects a "--"-leading value, so
 // `--any --foo` still falls through to the missing-arg guard instead.)
-const VALUE_FLAGS = new Set(["--any", "--find", "--relates", "--feature", "--focus", "--tokens", "--symbols", "--platform"]);
+const VALUE_FLAGS = new Set(["--any", "--find", "--relates", "--feature", "--focus", "--tokens", "--symbols", "--platform", "--types"]);
 const valueIdx = new Set();
 for (let i = 0; i < args.length - 1; i++) if (VALUE_FLAGS.has(args[i])) valueIdx.add(i + 1);
 
@@ -1598,6 +1704,10 @@ Query commands:
   --feature <name>     files composing a feature + external dependents
   --features           list all features (route segments) by size
   --hubs               top files by PageRank importance
+  --packages [--json]  show composer package dependency graph
+  --types [path|Class::m] [--all]
+                       show resolved PHP types per file or symbol (HIGH+MEDIUM only by default)
+  --legacy [--json]    report non-PSR-4 files, dirs, and suggested mappings
   --print              dump the full cached map as JSON
   (no flags)           build the map + print a one-line summary
 
@@ -1717,19 +1827,25 @@ else if (has("--any")) {
         if (e.name.toLowerCase().includes(q)) symObjs.push({ file: path, name: e.name, kind: e.kind });
     const symHits = symObjs.map((s) => `  ${s.file} → ${s.name} (${s.kind})`);
     const featNames = Object.keys(data.features || {}).filter((k) => k.toLowerCase().includes(q));
+    // CMP-05: package name lookup — surfaces before symbol matches per CONTEXT.md order requirement.
+    const pkgMatches = (data.packages || []).filter(p =>
+      p.to.toLowerCase().includes(q) || p.from.toLowerCase().includes(q)
+    );
     if (fileKey) {
       // A file resolved — but ALSO surface symbol/feature hits (fix #3) so a
       // loose path match (e.g. "auth") can't shadow a symbol the user wanted.
       const f = data.files[fileKey];
-      out({ command: "any", query: raw, kind: "file", file: fileKey, pagerank: f.pagerank ?? null, exports: f.exports, imports: f.imports, dependents: f.dependents, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
+      out({ command: "any", query: raw, kind: "file", file: fileKey, pagerank: f.pagerank ?? null, exports: f.exports, imports: f.imports, dependents: f.dependents, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })), packages: pkgMatches }, () => {
         console.log(`[structure:file] ${fileKey}  (pr ${f.pagerank ?? "—"})`);
         fileBlock(fileKey, f);
+        if (pkgMatches.length) { console.log(`[packages] ${pkgMatches.length} match for "${raw}":`); for (const p of pkgMatches) console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}`); }
         if (symHits.length) { console.log(`[structure] ${symHits.length} symbol match for "${raw}":`); console.log(symHits.join("\n")); }
         if (featNames.length) console.log("features: " + featNames.map((n) => `${n} (${data.features[n].length})`).join(", "));
       });
-    } else if (symHits.length || featNames.length) {
-      out({ command: "any", query: raw, kind: "structure", symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
+    } else if (pkgMatches.length || symHits.length || featNames.length) {
+      out({ command: "any", query: raw, kind: "structure", packages: pkgMatches, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
         console.log(`[structure] ${symHits.length} symbol, ${featNames.length} feature match for "${raw}"`);
+        if (pkgMatches.length) { console.log(`[packages] ${pkgMatches.length} match for "${raw}":`); for (const p of pkgMatches) console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}`); }
         if (symHits.length) console.log(symHits.join("\n"));
         if (featNames.length) console.log("features: " + featNames.map((n) => `${n} (${data.features[n].length})`).join(", "));
       });
@@ -1912,10 +2028,140 @@ else if (has("--any")) {
     console.log("hubs (PageRank importance):");
     for (const h of data.hubs) console.log(`  ${h}`);
   });
+} else if (has("--packages")) {
+  const data = ensureFresh();
+  const pkgs = data.packages || [];
+  out({ command: "packages", count: pkgs.length, packages: pkgs }, () => {
+    if (pkgs.length === 0) {
+      console.log("packages (0): (none)");
+    } else {
+      console.log(`packages (${pkgs.length}):`);
+      for (const p of pkgs) {
+        const ver = p.resolvedVersion ? ` (${p.resolvedVersion})` : "";
+        console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}${ver}`);
+      }
+    }
+  });
+} else if (has("--types")) {
+  const data = ensureFresh();
+  const typeArg = arg("--types");
+  const showAll = has("--all");
+  // Collect PHP file entries (exclude vendor)
+  const phpEntries = Object.entries(data.files || {}).filter(
+    ([path]) => path.endsWith(".php") && !path.includes("/vendor/")
+  );
+  if (!typeArg) {
+    // No-arg mode: list PHP files with type counts
+    const fileSummaries = phpEntries.map(([path, entry]) => {
+      const assigned = (entry.assignedTypes || []).length;
+      const declared = (entry.enhanced?.types || []).length;
+      const chain = showAll
+        ? (entry.chainTypes || []).length
+        : (entry.chainTypes || []).filter(t => t.confidence !== "LOW").length;
+      return { path, assignedCount: assigned, declaredCount: declared, chainCount: chain };
+    });
+    out({ command: "types", query: null, files: fileSummaries }, () => {
+      if (fileSummaries.length === 0) {
+        console.log("types: (no PHP files)");
+      } else {
+        console.log(`types (${fileSummaries.length} PHP files):`);
+        for (const f of fileSummaries) {
+          console.log(`  ${f.path}: ${f.assignedCount} assigned, ${f.declaredCount} declared, ${f.chainCount} chain`);
+        }
+      }
+    });
+  } else if (typeArg.includes("::")) {
+    // Symbol mode: ClassName::method
+    const [classPart] = typeArg.split("::");
+    const matches = [];
+    for (const [path, entry] of phpEntries) {
+      const allTypes = [
+        ...(entry.assignedTypes || []),
+        ...(entry.phpDocTypes || []),
+        ...(showAll ? (entry.chainTypes || []) : (entry.chainTypes || []).filter(t => t.confidence !== "LOW")),
+        ...(entry.enhanced?.types || []),
+      ];
+      const hits = allTypes.filter(t =>
+        (t.type || "").includes(classPart) || (t.name || "").includes(classPart) || (t.variable || "").includes(classPart)
+      );
+      if (hits.length > 0) matches.push({ path, types: hits });
+    }
+    if (matches.length === 0) {
+      exitCode = 1;
+      out({ command: "types", error: "no match", query: typeArg }, () => {
+        console.log(`types: no match for "${typeArg}"`);
+      });
+    } else {
+      out({ command: "types", query: typeArg, matches }, () => {
+        console.log(`types for "${typeArg}":`);
+        for (const m of matches) {
+          console.log(`  ${m.path}:`);
+          for (const t of m.types) console.log(`    ${JSON.stringify(t)}`);
+        }
+      });
+    }
+  } else {
+    // File-path mode: find matching entry by exact key or suffix match
+    const keys = Object.keys(data.files || {});
+    const { key, candidates } = resolveFile(keys, data.files, typeArg);
+    if (!key) {
+      exitCode = 1;
+      out({ command: "types", error: "no match", query: typeArg, candidates: candidates || [] }, () => {
+        if (candidates && candidates.length > 0) {
+          console.log(`types: ambiguous match for "${typeArg}": ${candidates.join(", ")}`);
+        } else {
+          console.log(`types: no match for "${typeArg}"`);
+        }
+      });
+    } else {
+      const entry = data.files[key];
+      const assignedTypes = entry.assignedTypes || [];
+      const phpDocTypes = entry.phpDocTypes || [];
+      const chainTypes = showAll
+        ? (entry.chainTypes || [])
+        : (entry.chainTypes || []).filter(t => t.confidence !== "LOW");
+      const declaredTypes = entry.enhanced?.types || [];
+      out({
+        command: "types", query: typeArg, file: key,
+        assignedTypes, phpDocTypes, chainTypes, declaredTypes,
+      }, () => {
+        console.log(`types for "${key}":`);
+        if (assignedTypes.length) { console.log(`  assigned (${assignedTypes.length}):`); for (const t of assignedTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (declaredTypes.length) { console.log(`  declared (${declaredTypes.length}):`); for (const t of declaredTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (phpDocTypes.length) { console.log(`  phpDoc (${phpDocTypes.length}):`); for (const t of phpDocTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (chainTypes.length) { console.log(`  chain (${chainTypes.length}):`); for (const t of chainTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (!assignedTypes.length && !declaredTypes.length && !phpDocTypes.length && !chainTypes.length) {
+          console.log("  (no type data)");
+        }
+      });
+    }
+  }
+} else if (has("--legacy")) {
+  const data = ensureFresh();
+  const warnings = data.legacyWarnings || [];
+  out({ command: "legacy", count: warnings.length, legacyWarnings: warnings }, () => {
+    if (warnings.length === 0) {
+      console.log("legacy warnings (0): (none)");
+    } else {
+      console.log(`legacy warnings (${warnings.length}):`);
+      for (const w of warnings) {
+        if (w.type === "legacy-dir") {
+          console.log(`  [heuristic-dir] ${w.directory} — ${w.message}`);
+          console.log(`  → add PSR-4 entry in composer.json autoload`);
+        } else if (w.type === "classmap") {
+          console.log(`  [classmap] ${w.entry} — ${w.message}`);
+        } else if (w.type === "autoload-file") {
+          console.log(`  [autoload-file] ${w.entry} — ${w.message}`);
+        } else {
+          console.log(`  [${w.type}] ${w.directory || w.entry || ""} — ${w.message}`);
+        }
+      }
+    }
+  });
 } else if (has("--print")) {
   const data = ensureFresh();
   // --print is already JSON-only; add top-level fileCount (was omitted before).
-  console.log(JSON.stringify({ fileCount: data.fileCount, hubs: data.hubs, features: data.features, rankedSymbols: data.rankedSymbols, files: data.files }));
+  console.log(JSON.stringify({ fileCount: data.fileCount, hubs: data.hubs, features: data.features, rankedSymbols: data.rankedSymbols, files: data.files, packages: data.packages || [] }));
 } else {
   // Bare invocation (possibly `--json` alone): build + one-line summary, or the
   // {command:"build", ...} JSON object.

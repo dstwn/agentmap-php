@@ -1,53 +1,90 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Docs Sync + PHP Eval
-current_phase: 1
+milestone: v1.2
+milestone_name: PHP Type Resolution + Composer Dependency Graph
+current_phase: 2
 status: Awaiting next milestone
-last_updated: "2026-06-19T20:50:16.674Z"
-last_activity: 2026-06-19
-last_activity_desc: Milestone v1.1 completed and archived
+stopped_at: Completed 13-03-PLAN.md
+last_updated: "2026-06-21T16:03:29.219Z"
+last_activity: 2026-06-21
+last_activity_desc: Milestone v1.2 completed and archived
+progress:
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 10
+  completed_plans: 11
+  percent: 100
+current_phase_name: Integration & CLI
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19 after v1.0 milestone)
+See: .planning/PROJECT.md (updated 2026-06-21 after v1.2 milestone start)
 
 **Core value:** Give PHP/Laravel developers the same repo-context superpower TS/JS projects get from agentmap
 
-**Current focus:** v2.0 — planning next milestone
-
-## Current Milestone
-
-**v1.1 Docs Sync + PHP Eval** — Phases 7-12 (completed 2026-06-19)
-
-## Active Phase
-
-None — v1.1 shipped
-
-## Status
-
-Milestone v1.1 complete. All 28 requirements satisfied. 194/194 tests pass.
-
-## Last Activity
-
-2026-06-19 — v1.1 milestone completed and archived
-
-## Notes
-
-- All 194 tests pass (v1.1 baseline maintained)
-- v1.0 + v1.1 milestones archived to `.planning/milestones/`
-- See `.planning/MILESTONES.md` for milestone history
-- v1.1 delivered 99.6% token savings on laravel/framework, 100%/100% eval accuracy
+**Current focus:** Phase 16 — Integration & CLI
 
 ## Current Position
 
-Phase: Milestone v1.1 complete
+Phase: Milestone v1.2 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-19 — Milestone v1.1 completed and archived
+Last activity: 2026-06-21 — Milestone v1.2 completed and archived
+
+## Performance Metrics
+
+**Velocity:**
+
+- Total plans completed: 0
+- Average duration: N/A
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| *(no plans yet)* | - | - | - |
+
+**Recent Trend:**
+
+- N/A (first phase)
+
+| Phase 13 P03 | 2min | 1 tasks | 1 files |
+| Phase 14-php-type-resolution-mvp P02 | 5min | 2 tasks | 2 files |
+| Phase 15 P02 | 3min | 2 tasks | 2 files |
+| Phase 16 P03 | 5min | 2 tasks | 1 files |
+
+## Accumulated Context
+
+### Decisions
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| PSR4Resolver built alongside legacy detection | LEG-01/02 require autoload parsing; PSR4Resolver is implementation mechanism | 13 |
+| 4 phases for v1.2 | Standard granularity; 3 categories compress into natural delivery boundaries | Roadmap |
+| Type MVP split from Advanced | Method chain tracing deferred per research recommendation; reduces risk | 14/15 |
+| All CLI flags consolidated into final phase | CLI wiring depends on all modules; avoids flag fragmentation across phases | 16 |
+| PageRank edge merging with configurable cap | Prevents edge explosion (Pitfall 4); cap default 1000 per dependency | 16 |
+
+- [Phase 15]: resolveChain() chain tracing on TypeResolver: PSR4-backed class walking, depth-limited at DEFAULT_CHAIN_DEPTH=3, cycle detection via visited Set — resolveChain() chain tracing on TypeResolver: PSR4-backed class walking, depth-limited at DEFAULT_CHAIN_DEPTH=3, cycle detection via visited Set
+- [Phase 15]: enhanced.types backfilled with confidence HIGH + source declared via immutable map() in agentmap.mjs; psr4Map from ComposerParser with try-catch fallback — enhanced.types backfilled with confidence HIGH + source declared via immutable map() in agentmap.mjs; psr4Map from ComposerParser with try-catch fallback
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-06-21T15:56:31.384Z
+Stopped at: Completed 13-03-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

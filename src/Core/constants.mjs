@@ -1,6 +1,6 @@
 export const MAP = ".claude/agentmap/map.json";
 export const MAP_LEGACY = ".claude/agentmap.json";
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const DAMPING = 0.85;
 export const TOL = 1e-6;
 export const MAX_ITER = 100;
@@ -23,3 +23,6 @@ export const SRC_EXT = /\.(ts|tsx|mts|cts|jsx|js|mjs|cjs|vue)$/;
 export const POST_COMMIT_MARKER = "agentmap — git post-commit hook";
 export const NUDGE_REL = ".claude/hooks/agentmap-nudge.mjs";
 export const MAP_IGNORE_LINE = ".claude/agentmap/";
+export const COMPOSER_FILES = Object.freeze(["composer.json", "composer.lock"]);
+export const LEGACY_DIRS = Object.freeze(["classes/", "lib/", "modules/", "src/"]);
+export const DEFAULT_CHAIN_DEPTH = 3;
