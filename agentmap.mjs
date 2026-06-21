@@ -64,6 +64,7 @@ const DEFAULT_BUDGET = 8192;     // --map token budget with no --focus
 const FOCUS_BUDGET = 1024;       // --map token budget when --focus is given
 const HUBS_LIMIT = 15;           // # of hubs persisted/printed
 const RANKED_SYMBOLS_LIMIT = 80; // # of ranked symbols persisted
+const PKG_EDGE_CAP = 1000;        // max package→file edges per package (CMP-04 edge explosion guard)
 const CONTENT_LINES_LIMIT = 40;  // # of git-grep lines shown in the --any content fallback
 const RELATED_LIMIT = 10;        // # of related files shown by --relates
 const SYMS_PER_FILE = 8;         // per-file symbol cap in the --map digest
@@ -826,11 +827,11 @@ function build() {
     for (const pkg of requirePkgs) {
       const pkgNode = `__pkg__${pkg.to}`;
       pkgNodes.push(pkgNode);
-      // Add edges from PHP source files → package node (up to 1000 per package)
+      // Add edges from PHP source files → package node (up to PKG_EDGE_CAP per package)
       let edgeCount = 0;
       for (const srcFile of phpSrcFiles) {
-        if (edgeCount >= 1000) {
-          process.stderr.write(`# agentmap: package edge cap reached for ${pkg.to} (1000 edges)\n`);
+        if (edgeCount >= PKG_EDGE_CAP) {
+          process.stderr.write(`# agentmap: package edge cap reached for ${pkg.to} (${PKG_EDGE_CAP} edges)\n`);
           break;
         }
         fileEdges.push({ from: srcFile, to: pkgNode, weight: pkgEdgeWeight });
@@ -1826,19 +1827,25 @@ else if (has("--any")) {
         if (e.name.toLowerCase().includes(q)) symObjs.push({ file: path, name: e.name, kind: e.kind });
     const symHits = symObjs.map((s) => `  ${s.file} → ${s.name} (${s.kind})`);
     const featNames = Object.keys(data.features || {}).filter((k) => k.toLowerCase().includes(q));
+    // CMP-05: package name lookup — surfaces before symbol matches per CONTEXT.md order requirement.
+    const pkgMatches = (data.packages || []).filter(p =>
+      p.to.toLowerCase().includes(q) || p.from.toLowerCase().includes(q)
+    );
     if (fileKey) {
       // A file resolved — but ALSO surface symbol/feature hits (fix #3) so a
       // loose path match (e.g. "auth") can't shadow a symbol the user wanted.
       const f = data.files[fileKey];
-      out({ command: "any", query: raw, kind: "file", file: fileKey, pagerank: f.pagerank ?? null, exports: f.exports, imports: f.imports, dependents: f.dependents, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
+      out({ command: "any", query: raw, kind: "file", file: fileKey, pagerank: f.pagerank ?? null, exports: f.exports, imports: f.imports, dependents: f.dependents, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })), packages: pkgMatches }, () => {
         console.log(`[structure:file] ${fileKey}  (pr ${f.pagerank ?? "—"})`);
         fileBlock(fileKey, f);
+        if (pkgMatches.length) { console.log(`[packages] ${pkgMatches.length} match for "${raw}":`); for (const p of pkgMatches) console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}`); }
         if (symHits.length) { console.log(`[structure] ${symHits.length} symbol match for "${raw}":`); console.log(symHits.join("\n")); }
         if (featNames.length) console.log("features: " + featNames.map((n) => `${n} (${data.features[n].length})`).join(", "));
       });
-    } else if (symHits.length || featNames.length) {
-      out({ command: "any", query: raw, kind: "structure", symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
+    } else if (pkgMatches.length || symHits.length || featNames.length) {
+      out({ command: "any", query: raw, kind: "structure", packages: pkgMatches, symbols: symObjs, features: featNames.map((n) => ({ name: n, count: data.features[n].length })) }, () => {
         console.log(`[structure] ${symHits.length} symbol, ${featNames.length} feature match for "${raw}"`);
+        if (pkgMatches.length) { console.log(`[packages] ${pkgMatches.length} match for "${raw}":`); for (const p of pkgMatches) console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}`); }
         if (symHits.length) console.log(symHits.join("\n"));
         if (featNames.length) console.log("features: " + featNames.map((n) => `${n} (${data.features[n].length})`).join(", "));
       });
