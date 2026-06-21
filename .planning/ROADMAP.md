@@ -130,7 +130,17 @@ Plans:
   6. All existing CLI flags (`--map`, `--relates`, `--hubs`, `--symbols`, `--find`, etc.) work identically with no behavior changes
   7. `SCHEMA_VERSION` bumps from 3 to 4, triggering automatic rebuild on existing caches
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1** *(parallel)*
+
+- [ ] 16-01-PLAN.md — CLI test scaffolding: 4 RED test files for all new flags (Wave 1)
+- [ ] 16-02-PLAN.md — SCHEMA_VERSION 3→4 + --packages/--types/--legacy handlers (Wave 1, parallel)
+
+**Wave 2** *(blocked on 16-02)*
+
+- [ ] 16-03-PLAN.md — PageRank package edge merging + --any package injection (Wave 2)
 
 ## Progress
 
