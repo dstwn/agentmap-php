@@ -8,7 +8,16 @@ A fork of [agentmap](https://github.com/raymondchins/agentmap) that extends the 
 
 Give PHP/Laravel developers (and their AI coding agents) the same repo-context superpower TS/JS projects get from agentmap — ranked import graphs, queryable code maps, and dramatically reduced token budgets for understanding a codebase.
 
-## Current State (v1.2)
+## Current State (v1.3)
+
+**Shipped:** 2026-06-21 (v1.3 CI Integration Testing)
+**Previous:** v1.2 shipped 2026-06-21, v1.1 shipped 2026-06-19, v1.0 shipped 2026-06-19
+
+- 260/260 tests passing (256 existing + 4 integration tests against laravel/framework)
+- CI fixed: all test subdirectories covered (`npm test` in ci.yml, was missing `test/vue-sfc/` 43 tests)
+- Integration tests: `test/integration-laravel.test.mjs` covers `--packages`, `--types`, `--legacy` against real laravel/framework fixture; CI clones on node-20 leg
+- Coverage: c8@11.0.0 captures src/Core/ at 88.64% stmts via subprocess boundary; lcov.info uploaded as CI artifact; threshold deferred to v1.4
+- Node 18/20/22 matrix, push+PR triggers, CodeQL, Gitleaks, npm audit all intact
 
 **Shipped:** 2026-06-21 (v1.2 PHP Type Resolution + Composer Dependency Graph)
 **Previous:** v1.1 shipped 2026-06-19, v1.0 shipped 2026-06-19 via [PR #1](https://github.com/dstwn/agentmap-php/pull/1)
@@ -53,12 +62,13 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 - ✓ BENCH-01..04: Laravel benchmark fixture — v1.1 (99.6% savings)
 - ✓ TEST-01..02: All tests pass, reproducible numbers — v1.1
 
-### Active (v1.2)
+### Validated (v1.3)
 
-- [ ] **ADV-01**: Full PHP type resolution — trace through assignments, returns, and method chains
-- [ ] **ADV-04**: Composer package dependency graph — parse `composer.json`/`composer.lock` for package-level edges
+- ✓ CI-01/CI-02: CI glob fixed, npm test covers all test subdirectories — v1.3
+- ✓ INTG-01..04: Integration tests against laravel/framework fixture, 260/260 pass — v1.3
+- ✓ COV-01..03: c8 coverage reporting, src/Core/ at 88.64% stmts, threshold deferred — v1.3
 
-### Future (post-v1.2)
+### Active (next milestone)
 
 Candidate themes deferred after v1.2:
 - Python support (LANG-01)
@@ -74,7 +84,7 @@ Candidate themes deferred after v1.2:
 ## Context
 
 - **Tech stack:** Node.js >= 18, ESM modules (`.mjs`), tree-sitter (PHP + JS grammar families)
-- **Tests:** 194 passing — 159 inherited TS/JS + hooks/install/integration, 8 PHP parser, 7 Laravel, 5 mixed, 15 enhanced Laravel
+- **Tests:** 260 passing — 256 unit/integration + 4 laravel/framework integration tests (v1.3)
 - **Architecture:** `src/Core/` plugin pattern — new languages add a parser module, no core changes
 - **Current parser stack:** EnhancedLaravelParser (PHP) → LaravelParser → PhpParser → LanguageParser
 - **v1.1 deliverables:** 99.6% token savings on laravel/framework; 100%/100% eval accuracy; all docs aligned
@@ -120,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-21 after v1.2 milestone start*
+*Last updated: 2026-06-21 after v1.3 milestone complete*
