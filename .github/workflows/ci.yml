@@ -37,6 +37,21 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Collect V8 coverage across subprocess boundary (node-20 leg only).
+      # c8 wraps npm test, setting NODE_V8_COVERAGE so agentmap.mjs subprocess
+      # inherits it. No threshold flags — CI passes regardless of %.
+      - name: Coverage report
+        if: matrix.node-version == 20
+        run: npx c8 --reporter=text --reporter=lcov npm test
+
+      - name: Upload coverage artifact
+        if: matrix.node-version == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
+
       # Smoke: the binary builds + prints a hub map against agentmap's own repo.
       - name: Smoke (--hubs on self)
         run: node agentmap.mjs --hubs
