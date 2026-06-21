@@ -5,6 +5,7 @@
 - ✅ **v1.0 PHP/Laravel Support** — Phases 1-6 (shipped 2026-06-19)
 - ✅ **v1.1 Docs Sync + PHP Eval** — Phases 7-12 (shipped 2026-06-19)
 - ✅ **v1.2 PHP Type Resolution + Composer Dependency Graph** — Phases 13-16 (shipped 2026-06-21)
+- 🔄 **v1.3 CI Integration Testing** — Phases 17-19 (active)
 
 ## Phases
 
@@ -47,6 +48,12 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 See: [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) · [v1.2-REQUIREMENTS.md](milestones/v1.2-REQUIREMENTS.md) · [v1.2-MILESTONE-AUDIT.md](milestones/v1.2-MILESTONE-AUDIT.md)
 
 </details>
+
+#### v1.3 CI Integration Testing (Phases 17-19)
+
+- [ ] **Phase 17: CI Glob Fix** - Fix glob so all 256 tests run in CI
+- [ ] **Phase 18: Integration Tests** - Integration tests against real laravel/framework fixture
+- [ ] **Phase 19: Coverage Reporting** - Coverage summary visible in CI logs on every run
 
 #### Phase 13: Foundation — Composer Graph + Legacy Detection
 
@@ -145,9 +152,47 @@ Plans:
 
 - [x] 16-03-PLAN.md — PageRank package edge merging + --any package injection (Wave 2)
 
+#### Phase 17: CI Glob Fix
+
+**Goal**: CI reliably runs all 256 tests on every push and PR
+**Depends on**: Nothing (first v1.3 phase)
+**Requirements**: CI-01, CI-02
+**Success Criteria** (what must be TRUE):
+  1. CI log shows 256 tests (not 213) on every push and PR across Node 18/20/22 matrix
+  2. `test/vue-sfc/` tests appear in CI output — no silent skip
+  3. CI exit code is non-zero when any test fails (glob expansion cannot silently drop files)
+  4. Local `npm test` and CI test count match
+**Plans**: TBD
+
+#### Phase 18: Integration Tests
+
+**Goal**: Users can verify core CLI flags work end-to-end against a real Laravel repo in CI
+**Depends on**: Phase 17 (fixed glob picks up the new test file automatically)
+**Requirements**: INTG-01, INTG-02, INTG-03, INTG-04
+**Success Criteria** (what must be TRUE):
+  1. CI runs `--packages` against laravel/framework fixture and asserts non-empty package graph output
+  2. CI runs `--types` against laravel/framework fixture and asserts type entries present
+  3. CI runs `--legacy` against laravel/framework fixture and asserts legacy warning output
+  4. Integration tests skip gracefully (not fail) when laravel/framework fixture is absent
+  5. All 256 existing tests still pass after integration test file is added
+**Plans**: TBD
+**UI hint**: no
+
+#### Phase 19: Coverage Reporting
+
+**Goal**: Coverage summary appears in CI logs on every run, capturing src/Core/ module coverage via subprocess boundary
+**Depends on**: Phase 17 (all tests must run before coverage numbers are meaningful); Phase 18 (integration tests contribute to coverage)
+**Requirements**: COV-01, COV-02, COV-03
+**Success Criteria** (what must be TRUE):
+  1. CI log shows a coverage summary table (text) on every run — lines, branches, functions visible
+  2. `src/Core/` modules appear in coverage report (not just test harness process)
+  3. Coverage step does not block CI on a threshold — run passes regardless of coverage %
+  4. `coverage/` directory excluded from git; `coverage/lcov.info` available as CI artifact
+**Plans**: TBD
+
 ## Progress
 
-**Execution Order:** Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16
+**Execution Order:** Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -167,3 +212,6 @@ Plans:
 | 14. PHP Type Resolution (MVP) | v1.2 | 2/2 | Complete   | 2026-06-21 |
 | 15. Advanced Type Resolution | v1.2 | 2/2 | Complete   | 2026-06-21 |
 | 16. Integration & CLI | v1.2 | 3/3 | Complete   | 2026-06-21 |
+| 17. CI Glob Fix | v1.3 | 0/? | Not started | - |
+| 18. Integration Tests | v1.3 | 0/? | Not started | - |
+| 19. Coverage Reporting | v1.3 | 0/? | Not started | - |
