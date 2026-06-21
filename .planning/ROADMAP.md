@@ -81,7 +81,11 @@ Plans:
   3. Type resolution complements (doesn't replace) existing `EnhancedLaravelParser.inferTypes()` — both sets appear merged with declared types as baseline
   4. User observes no significant performance regression on laravel/framework benchmark (type resolution adds <200ms)
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — TypeResolver class + TDD test suite (Wave 1)
+- [ ] 14-02-PLAN.md — map-builder.mjs integration + smoke test (Wave 2)
 
 #### Phase 15: Advanced Type Resolution
 
