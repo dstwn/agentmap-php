@@ -35,6 +35,7 @@ const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.i
 
 import { TypeResolver } from "./src/Core/TypeResolver.mjs";
 import { ComposerParser } from "./src/Core/ComposerParser.mjs";
+import { LegacyDetector } from "./src/Core/LegacyDetector.mjs";
 import { DEFAULT_CHAIN_DEPTH } from "./src/Core/constants.mjs";
 
 const MAP = ".claude/agentmap/map.json";
@@ -745,6 +746,8 @@ function build() {
     }
   }
   // --- TypeResolver: enrich PHP file entries with assignedTypes + phpDocTypes + chainTypes.
+  // composerResult is hoisted to build() scope so CMP-04 package→PageRank edges can use it.
+  let _composerResultForBuild = null;
   {
     const typeResolver = new TypeResolver();
     const cwdp = process.cwd().replace(/\\/g, "/");
@@ -752,6 +755,7 @@ function build() {
     try {
       const cp = new ComposerParser();
       const parsed = cp.parse(process.cwd());
+      _composerResultForBuild = parsed;
       psr4Map = parsed?.psr4Map ?? {};
     } catch (_) { /* no composer.json — degrade gracefully */ }
     for (const [filePath, entry] of Object.entries(files)) {
@@ -804,8 +808,47 @@ function build() {
   for (const [p, f] of Object.entries(files))
     for (const tp of f.imports)
       if (files[tp]) fileEdges.push({ from: p, to: tp, weight: (f.importedSymbols[tp] || []).length || 1 });
-  const fileRank = pagerank(nodes, fileEdges);
+
+  // --- CMP-04: Package→file PageRank edge merging.
+  // Add synthetic package nodes to the graph so packages get their own PageRank score.
+  // Edges: each PHP source file that depends on a package gets an edge → package node.
+  // Weight: 0.1× average direct import weight (subtle boost, per CONTEXT.md locked decision).
+  // Cap: 1000 edges per package to prevent edge explosion on large projects.
+  const pkgNodes = []; // synthetic package node ids
+  const rawPkgs = _composerResultForBuild?.packages ?? [];
+  const requirePkgs = rawPkgs.filter(p => p.type === "require");
+  if (requirePkgs.length > 0) {
+    const phpSrcFiles = Object.keys(files).filter(p => p.endsWith(".php") && !p.includes("/vendor/"));
+    const avgWeight = fileEdges.length > 0
+      ? fileEdges.reduce((s, e) => s + e.weight, 0) / fileEdges.length
+      : 1;
+    const pkgEdgeWeight = +(avgWeight * 0.1).toFixed(6) || 0.1;
+    for (const pkg of requirePkgs) {
+      const pkgNode = `__pkg__${pkg.to}`;
+      pkgNodes.push(pkgNode);
+      // Add edges from PHP source files → package node (up to 1000 per package)
+      let edgeCount = 0;
+      for (const srcFile of phpSrcFiles) {
+        if (edgeCount >= 1000) {
+          process.stderr.write(`# agentmap: package edge cap reached for ${pkg.to} (1000 edges)\n`);
+          break;
+        }
+        fileEdges.push({ from: srcFile, to: pkgNode, weight: pkgEdgeWeight });
+        edgeCount++;
+      }
+    }
+  }
+
+  const allNodes = [...nodes, ...pkgNodes];
+  const fileRank = pagerank(allNodes, fileEdges);
   for (const p of nodes) files[p].pagerank = +(fileRank[p] || 0).toFixed(6);
+
+  // Attach pagerank to each package entry (for --packages and --print output).
+  const packagesWithRank = rawPkgs.map(pkg => {
+    const pkgNode = `__pkg__${pkg.to}`;
+    const pr = fileRank[pkgNode];
+    return pr !== undefined ? { ...pkg, pagerank: +(pr).toFixed(6) } : pkg;
+  });
 
   // --- Symbol ranking (Aider-style): identifier graph from named imports.
   const rankedSymbols = rankSymbols(files, null);
@@ -821,12 +864,26 @@ function build() {
   // persisting so the on-disk `files` shape stays stable.
   for (const p of nodes) delete files[p].defaultExportName;
 
+  // --- LegacyDetector: detect non-PSR-4 / legacy code indicators.
+  let legacyWarningsForBuild = [];
+  try {
+    const cr = _composerResultForBuild;
+    legacyWarningsForBuild = new LegacyDetector().detect(
+      process.cwd(),
+      cr?.psr4Map ?? {},
+      cr?.classmaps ?? [],
+      cr?.autoFiles ?? []
+    );
+  } catch (_) { /* degrade gracefully */ }
+
   const sha = currentSha();
   const out = {
     schema: SCHEMA_VERSION, generatedSha: sha, dirty: dirtyCount(), fileCount: nodes.length,
     // fingerprint lets non-git repos (sha === "") trust the cache across runs.
     fingerprint: sha ? undefined : sourceFingerprint(),
     hubs, features, rankedSymbols: rankedSymbols.slice(0, RANKED_SYMBOLS_LIMIT), files,
+    packages: packagesWithRank,
+    legacyWarnings: legacyWarningsForBuild,
   };
   mkdirSync(".claude/agentmap", { recursive: true });
   // Atomic write: tmp + rename so a concurrent background rebuild can never
@@ -1964,10 +2021,140 @@ else if (has("--any")) {
     console.log("hubs (PageRank importance):");
     for (const h of data.hubs) console.log(`  ${h}`);
   });
+} else if (has("--packages")) {
+  const data = ensureFresh();
+  const pkgs = data.packages || [];
+  out({ command: "packages", count: pkgs.length, packages: pkgs }, () => {
+    if (pkgs.length === 0) {
+      console.log("packages (0): (none)");
+    } else {
+      console.log(`packages (${pkgs.length}):`);
+      for (const p of pkgs) {
+        const ver = p.resolvedVersion ? ` (${p.resolvedVersion})` : "";
+        console.log(`  ${p.from} → ${p.to} [${p.type}] ${p.constraint}${ver}`);
+      }
+    }
+  });
+} else if (has("--types")) {
+  const data = ensureFresh();
+  const typeArg = arg("--types");
+  const showAll = has("--all");
+  // Collect PHP file entries (exclude vendor)
+  const phpEntries = Object.entries(data.files || {}).filter(
+    ([path]) => path.endsWith(".php") && !path.includes("/vendor/")
+  );
+  if (!typeArg) {
+    // No-arg mode: list PHP files with type counts
+    const fileSummaries = phpEntries.map(([path, entry]) => {
+      const assigned = (entry.assignedTypes || []).length;
+      const declared = (entry.enhanced?.types || []).length;
+      const chain = showAll
+        ? (entry.chainTypes || []).length
+        : (entry.chainTypes || []).filter(t => t.confidence !== "LOW").length;
+      return { path, assignedCount: assigned, declaredCount: declared, chainCount: chain };
+    });
+    out({ command: "types", query: null, files: fileSummaries }, () => {
+      if (fileSummaries.length === 0) {
+        console.log("types: (no PHP files)");
+      } else {
+        console.log(`types (${fileSummaries.length} PHP files):`);
+        for (const f of fileSummaries) {
+          console.log(`  ${f.path}: ${f.assignedCount} assigned, ${f.declaredCount} declared, ${f.chainCount} chain`);
+        }
+      }
+    });
+  } else if (typeArg.includes("::")) {
+    // Symbol mode: ClassName::method
+    const [classPart] = typeArg.split("::");
+    const matches = [];
+    for (const [path, entry] of phpEntries) {
+      const allTypes = [
+        ...(entry.assignedTypes || []),
+        ...(entry.phpDocTypes || []),
+        ...(showAll ? (entry.chainTypes || []) : (entry.chainTypes || []).filter(t => t.confidence !== "LOW")),
+        ...(entry.enhanced?.types || []),
+      ];
+      const hits = allTypes.filter(t =>
+        (t.type || "").includes(classPart) || (t.name || "").includes(classPart) || (t.variable || "").includes(classPart)
+      );
+      if (hits.length > 0) matches.push({ path, types: hits });
+    }
+    if (matches.length === 0) {
+      exitCode = 1;
+      out({ command: "types", error: "no match", query: typeArg }, () => {
+        console.log(`types: no match for "${typeArg}"`);
+      });
+    } else {
+      out({ command: "types", query: typeArg, matches }, () => {
+        console.log(`types for "${typeArg}":`);
+        for (const m of matches) {
+          console.log(`  ${m.path}:`);
+          for (const t of m.types) console.log(`    ${JSON.stringify(t)}`);
+        }
+      });
+    }
+  } else {
+    // File-path mode: find matching entry by exact key or suffix match
+    const keys = Object.keys(data.files || {});
+    const { key, candidates } = resolveFile(keys, data.files, typeArg);
+    if (!key) {
+      exitCode = 1;
+      out({ command: "types", error: "no match", query: typeArg, candidates: candidates || [] }, () => {
+        if (candidates && candidates.length > 0) {
+          console.log(`types: ambiguous match for "${typeArg}": ${candidates.join(", ")}`);
+        } else {
+          console.log(`types: no match for "${typeArg}"`);
+        }
+      });
+    } else {
+      const entry = data.files[key];
+      const assignedTypes = entry.assignedTypes || [];
+      const phpDocTypes = entry.phpDocTypes || [];
+      const chainTypes = showAll
+        ? (entry.chainTypes || [])
+        : (entry.chainTypes || []).filter(t => t.confidence !== "LOW");
+      const declaredTypes = entry.enhanced?.types || [];
+      out({
+        command: "types", query: typeArg, file: key,
+        assignedTypes, phpDocTypes, chainTypes, declaredTypes,
+      }, () => {
+        console.log(`types for "${key}":`);
+        if (assignedTypes.length) { console.log(`  assigned (${assignedTypes.length}):`); for (const t of assignedTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (declaredTypes.length) { console.log(`  declared (${declaredTypes.length}):`); for (const t of declaredTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (phpDocTypes.length) { console.log(`  phpDoc (${phpDocTypes.length}):`); for (const t of phpDocTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (chainTypes.length) { console.log(`  chain (${chainTypes.length}):`); for (const t of chainTypes) console.log(`    ${JSON.stringify(t)}`); }
+        if (!assignedTypes.length && !declaredTypes.length && !phpDocTypes.length && !chainTypes.length) {
+          console.log("  (no type data)");
+        }
+      });
+    }
+  }
+} else if (has("--legacy")) {
+  const data = ensureFresh();
+  const warnings = data.legacyWarnings || [];
+  out({ command: "legacy", count: warnings.length, legacyWarnings: warnings }, () => {
+    if (warnings.length === 0) {
+      console.log("legacy warnings (0): (none)");
+    } else {
+      console.log(`legacy warnings (${warnings.length}):`);
+      for (const w of warnings) {
+        if (w.type === "legacy-dir") {
+          console.log(`  [heuristic-dir] ${w.directory} — ${w.message}`);
+          console.log(`  → add PSR-4 entry in composer.json autoload`);
+        } else if (w.type === "classmap") {
+          console.log(`  [classmap] ${w.entry} — ${w.message}`);
+        } else if (w.type === "autoload-file") {
+          console.log(`  [autoload-file] ${w.entry} — ${w.message}`);
+        } else {
+          console.log(`  [${w.type}] ${w.directory || w.entry || ""} — ${w.message}`);
+        }
+      }
+    }
+  });
 } else if (has("--print")) {
   const data = ensureFresh();
   // --print is already JSON-only; add top-level fileCount (was omitted before).
-  console.log(JSON.stringify({ fileCount: data.fileCount, hubs: data.hubs, features: data.features, rankedSymbols: data.rankedSymbols, files: data.files }));
+  console.log(JSON.stringify({ fileCount: data.fileCount, hubs: data.hubs, features: data.features, rankedSymbols: data.rankedSymbols, files: data.files, packages: data.packages || [] }));
 } else {
   // Bare invocation (possibly `--json` alone): build + one-line summary, or the
   // {command:"build", ...} JSON object.
