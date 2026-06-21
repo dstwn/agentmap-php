@@ -14,10 +14,10 @@ Requirements for v1.3 CI Integration Testing milestone. Each maps to roadmap pha
 
 ### Integration Tests
 
-- [ ] **INTG-01**: User can verify `--packages` flag works end-to-end against a real Laravel repo in CI
-- [ ] **INTG-02**: User can verify `--types` flag works end-to-end against a real Laravel repo in CI
-- [ ] **INTG-03**: User can verify `--legacy` flag works end-to-end against a real Laravel repo in CI
-- [ ] **INTG-04**: Integration tests skip gracefully when laravel/framework fixture is absent (no CI failure on missing fixture)
+- [x] **INTG-01**: User can verify `--packages` flag works end-to-end against a real Laravel repo in CI
+- [x] **INTG-02**: User can verify `--types` flag works end-to-end against a real Laravel repo in CI
+- [x] **INTG-03**: User can verify `--legacy` flag works end-to-end against a real Laravel repo in CI
+- [x] **INTG-04**: Integration tests skip gracefully when laravel/framework fixture is absent (no CI failure on missing fixture)
 
 ### Coverage
 
@@ -54,15 +54,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | CI-01 | Phase 17 | Pending |
 | CI-02 | Phase 17 | Pending |
-| INTG-01 | Phase 18 | Pending |
-| INTG-02 | Phase 18 | Pending |
-| INTG-03 | Phase 18 | Pending |
-| INTG-04 | Phase 18 | Pending |
+| INTG-01 | Phase 18 | Complete |
+| INTG-02 | Phase 18 | Complete |
+| INTG-03 | Phase 18 | Complete |
+| INTG-04 | Phase 18 | Complete |
 | COV-01 | Phase 19 | Pending |
 | COV-02 | Phase 19 | Pending |
 | COV-03 | Phase 19 | Pending |
 
 **Coverage:**
+
 - v1.3 requirements: 9 total
 - Mapped to phases: 9
 - Unmapped: 0 ✓
