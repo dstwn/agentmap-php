@@ -23,3 +23,5 @@ export const SRC_EXT = /\.(ts|tsx|mts|cts|jsx|js|mjs|cjs|vue)$/;
 export const POST_COMMIT_MARKER = "agentmap — git post-commit hook";
 export const NUDGE_REL = ".claude/hooks/agentmap-nudge.mjs";
 export const MAP_IGNORE_LINE = ".claude/agentmap/";
+export const COMPOSER_FILES = Object.freeze(["composer.json", "composer.lock"]);
+export const LEGACY_DIRS = Object.freeze(["classes/", "lib/", "modules/", "src/"]);
