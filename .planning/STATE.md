@@ -1,12 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Docs Sync + PHP Eval
-current_phase: 1
-status: Awaiting next milestone
-last_updated: "2026-06-19T20:50:16.674Z"
-last_activity: 2026-06-19
-last_activity_desc: Milestone v1.1 completed and archived
+milestone: v1.2
+milestone_name: PHP Type Resolution + Composer Dependency Graph
+status: planning
+last_updated: "2026-06-21T12:24:37.396Z"
+last_activity: 2026-06-21
+progress:
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -17,38 +21,39 @@ See: .planning/PROJECT.md (updated 2026-06-19 after v1.0 milestone)
 
 **Core value:** Give PHP/Laravel developers the same repo-context superpower TS/JS projects get from agentmap
 
-**Current focus:** v2.0 — planning next milestone
+**Current focus:** v1.2 — PHP Type Resolution + Composer Dependency Graph
 
 ## Current Milestone
 
-**v1.1 Docs Sync + PHP Eval** — Phases 7-12 (completed 2026-06-19)
+**v1.2 PHP Type Resolution + Composer Dependency Graph** — Planning
 
 ## Active Phase
 
-None — v1.1 shipped
+None — defining requirements
 
 ## Status
 
-Milestone v1.1 complete. All 28 requirements satisfied. 194/194 tests pass.
+Milestone v1.2 started. Defining requirements for PHP type resolution and composer dependency graph.
 
 ## Last Activity
 
-2026-06-19 — v1.1 milestone completed and archived
+2026-06-21 — v1.2 milestone started
 
 ## Notes
 
-- All 194 tests pass (v1.1 baseline maintained)
-- v1.0 + v1.1 milestones archived to `.planning/milestones/`
-- See `.planning/MILESTONES.md` for milestone history
 - v1.1 delivered 99.6% token savings on laravel/framework, 100%/100% eval accuracy
+- v1.2 focus: ADV-01 (PHP type resolution) + ADV-04 (Composer dependency graph)
+- Legacy hybrid codebase detection for non-PSR-4 patterns
+- manobo-upgrade project assessment: ~80% coverage, v1.2 closes gaps
 
 ## Current Position
 
-Phase: Milestone v1.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-19 — Milestone v1.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-21 — Milestone v1.2 started
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Define requirements for v1.2
+- Create roadmap with phased execution plan

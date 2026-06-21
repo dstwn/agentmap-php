@@ -21,6 +21,15 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 - Laravel eval: 100%/100% symbol-def/dependents accuracy
 - Available languages: TS/JS, Vue SFC, PHP, Laravel (full stack)
 
+## Current Milestone: v1.2 — PHP Type Resolution + Composer Dependency Graph
+
+**Goal:** Extend agentmap-php with composer dependency graph parsing and full PHP type resolution beyond declared types.
+
+**Target features:**
+- Composer `composer.json` / `composer.lock` parsing → package-level dependency graph with version constraints
+- Full PHP type inference beyond declared types — trace through assignments, returns, and method chains
+- Legacy non-PSR-4 code detection for better coverage on hybrid codebases (e.g. manobo-upgrade's `classes/` + `modules/`)
+
 ## Business Context
 
 - **Customer:** PHP/Laravel developers using AI coding agents (Claude Code, Cursor, Copilot, etc.)
@@ -50,15 +59,17 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 - ✓ BENCH-01..04: Laravel benchmark fixture — v1.1 (99.6% savings)
 - ✓ TEST-01..02: All tests pass, reproducible numbers — v1.1
 
-### Active (v2.0)
+### Active (v1.2)
 
-To be defined via `/gsd-new-milestone`. Candidate themes from REQUIREMENTS.md v2 section:
+- [ ] **ADV-01**: Full PHP type resolution — trace through assignments, returns, and method chains
+- [ ] **ADV-04**: Composer package dependency graph — parse `composer.json`/`composer.lock` for package-level edges
 
+### Future (post-v1.2)
+
+Candidate themes deferred after v1.2:
 - Python support (LANG-01)
 - Go support (LANG-02)
 - Rust support (LANG-03)
-- Full PHP type resolution beyond declared types (ADV-01)
-- Composer package dependency graph (ADV-04)
 
 ### Out of Scope
 
@@ -97,5 +108,22 @@ To be defined via `/gsd-new-milestone`. Candidate themes from REQUIREMENTS.md v2
 - **Performance:** PHP parsing comparable to TS/JS speed (achieved ✓)
 - **Dependencies:** Minimize additions — only `tree-sitter` + `tree-sitter-php` added
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-06-19 after v1.1 milestone*
+*Last updated: 2026-06-21 after v1.2 milestone start*
