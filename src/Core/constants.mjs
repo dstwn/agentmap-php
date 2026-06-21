@@ -25,3 +25,4 @@ export const NUDGE_REL = ".claude/hooks/agentmap-nudge.mjs";
 export const MAP_IGNORE_LINE = ".claude/agentmap/";
 export const COMPOSER_FILES = Object.freeze(["composer.json", "composer.lock"]);
 export const LEGACY_DIRS = Object.freeze(["classes/", "lib/", "modules/", "src/"]);
+export const DEFAULT_CHAIN_DEPTH = 3;
