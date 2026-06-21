@@ -42,7 +42,7 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 
 - [x] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans) (completed 2026-06-21)
 - [x] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations (completed 2026-06-21)
-- [ ] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging
+- [x] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging (completed 2026-06-21)
 - [ ] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4
 
 #### Phase 13: Foundation — Composer Graph + Legacy Detection
@@ -104,16 +104,16 @@ Plans:
   3. Method chain resolution respects configurable depth limit without runaway recursion (warning logged at limit)
   4. Default type output shows only HIGH+MEDIUM confidence types; `--all` flag reveals LOW confidence
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans complete
 
 Plans:
 **Wave 1**
 
-- [ ] 15-01-PLAN.md — DEFAULT_CHAIN_DEPTH constant + chains.php fixture + RED tests (Wave 1)
+- [x] 15-01-PLAN.md — DEFAULT_CHAIN_DEPTH constant + chains.php fixture + RED tests (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 15-02-PLAN.md — resolveChain() implementation + agentmap.mjs chainTypes/backfill wiring (Wave 2)
+- [x] 15-02-PLAN.md — resolveChain() implementation + agentmap.mjs chainTypes/backfill wiring (Wave 2)
 
 #### Phase 16: Integration & CLI
 
@@ -152,5 +152,5 @@ Plans:
 | 12. Verification & Polish | v1.1 | 1/1 | Complete | 2026-06-19 |
 | 13. Foundation — Composer Graph + Legacy Detection | v1.2 | 3/3 | Complete   | 2026-06-21 |
 | 14. PHP Type Resolution (MVP) | v1.2 | 2/2 | Complete   | 2026-06-21 |
-| 15. Advanced Type Resolution | v1.2 | 0/0 | Not started | - |
+| 15. Advanced Type Resolution | v1.2 | 2/2 | Complete   | 2026-06-21 |
 | 16. Integration & CLI | v1.2 | 0/0 | Not started | - |
