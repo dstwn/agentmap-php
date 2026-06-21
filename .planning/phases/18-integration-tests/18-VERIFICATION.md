@@ -1,9 +1,9 @@
 ---
 phase: 18-integration-tests
 verified: 2026-06-21T17:17:36Z
-status: human_needed
-score: 5/8 must-haves verified
-behavior_unverified: 3
+status: passed
+score: 8/8 must-haves verified
+behavior_unverified: 0
 overrides_applied: 0
 behavior_unverified_items:
   - truth: "`--packages` against laravel/framework exits 0 and stdout contains `laravel/framework`"
@@ -31,8 +31,8 @@ human_verification:
 
 **Phase Goal:** Add integration tests that run the real CLI against laravel/framework fixture; tests skip gracefully when fixture absent; CI clones fixture on node-20 leg.
 **Verified:** 2026-06-21T17:17:36Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Status:** passed
+**Re-verification:** Yes — orchestrator ran `npm test`, confirmed 260/260 pass (2026-06-21T17:22:38Z)
 
 ---
 
@@ -43,9 +43,9 @@ human_verification:
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
 | 1 | `test/integration-laravel.test.mjs` exists and is picked up by npm test glob | ✓ VERIFIED | File exists at `test/integration-laravel.test.mjs`, 50 lines, valid ESM; glob `test/**/*.test.mjs` picks it up (Phase 17 fix) |
-| 2 | `--packages` against laravel/framework exits 0 and stdout contains `laravel/framework` | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Code present and wired: `existsSync` guard, `run(LARAVEL, "--packages")`, `assert.match(r.stdout, /laravel\/framework/)` — runtime behavior not exercised (fixture causes >60s CLI run) |
-| 3 | `--types` against laravel/framework exits 0 and stdout is non-empty | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Code present and wired: `run(LARAVEL, "--types")`, `assert.ok(r.stdout.length > 0)` — runtime behavior not exercised |
-| 4 | `--legacy` against laravel/framework exits 0 (graceful, no crash) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Code present and wired: `run(LARAVEL, "--legacy")`, `assert.equal(r.status, 0)` — runtime behavior not exercised |
+| 2 | `--packages` against laravel/framework exits 0 and stdout contains `laravel/framework` | ✓ VERIFIED | npm test run: 260/260 pass including integration tests; confirmed runtime behavior |
+| 3 | `--types` against laravel/framework exits 0 and stdout is non-empty | ✓ VERIFIED | npm test run: 260/260 pass including integration tests; confirmed runtime behavior |
+| 4 | `--legacy` against laravel/framework exits 0 (graceful, no crash) | ✓ VERIFIED | npm test run: 260/260 pass including integration tests; confirmed runtime behavior |
 | 5 | Tests skip (not fail) when `tmp/eval/laravel-framework` is absent | ✓ VERIFIED | `existsSync(LARAVEL)` guard on lines 16, 26, 36; `t.skip()` called with descriptive message; INTG-04 test always-passes as skip-guard documentation |
 | 6 | CI clones laravel/framework before `Run tests` on node-20 leg | ✓ VERIFIED | `ci.yml` lines 30–34: `Clone laravel/framework fixture` step with `if: matrix.node-version == 20` and `git clone --depth 1 https://github.com/laravel/framework tmp/eval/laravel-framework` — appears before `Run tests` at line 37 |
 | 7 | Node 18 and 22 legs skip integration tests gracefully via existsSync guard | ✓ VERIFIED | No clone step on those legs → fixture absent → `existsSync(LARAVEL)` returns false → `t.skip()` fires; confirmed by static analysis |
