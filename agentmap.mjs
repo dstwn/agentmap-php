@@ -42,7 +42,9 @@ const MAP_LEGACY = ".claude/agentmap.json"; // pre-namespacing path; read for mi
 // Bumped 2 → 3: Vue SFC support. `.vue` files now appear in the map and the
 // source-discovery / freshness checks treat them as first-class source files.
 // Old caches (schema 2) are ignored so the first run after upgrade rebuilds.
-const SCHEMA_VERSION = 3;
+// Bumped 3 → 4: PHP packages, legacyWarnings, and type data (assignedTypes,
+// phpDocTypes, chainTypes) now in map. Package nodes carry pagerank field.
+const SCHEMA_VERSION = 4;
 
 // ---------------------------------------------------------------------------
 // Tuning constants — KEEP THESE VALUES IDENTICAL (output + marketing must not
@@ -1619,13 +1621,14 @@ const KNOWN = new Set([
   "--dry-run", "--setup-mcp", "--mcp",
   "--any", "--find", "--relates", "--map", "--focus", "--tokens",
   "--symbols", "--feature", "--features", "--hubs",
+  "--packages", "--types", "--legacy", "--all",
 ]);
 
 // A token consumed as the VALUE of a value-taking flag is never itself a flag —
 // so a dash-leading query like `--any "-O/bin/sh"` is bound as the query, not
 // mistaken for an unknown flag. (arg() already rejects a "--"-leading value, so
 // `--any --foo` still falls through to the missing-arg guard instead.)
-const VALUE_FLAGS = new Set(["--any", "--find", "--relates", "--feature", "--focus", "--tokens", "--symbols", "--platform"]);
+const VALUE_FLAGS = new Set(["--any", "--find", "--relates", "--feature", "--focus", "--tokens", "--symbols", "--platform", "--types"]);
 const valueIdx = new Set();
 for (let i = 0; i < args.length - 1; i++) if (VALUE_FLAGS.has(args[i])) valueIdx.add(i + 1);
 
@@ -1643,6 +1646,10 @@ Query commands:
   --feature <name>     files composing a feature + external dependents
   --features           list all features (route segments) by size
   --hubs               top files by PageRank importance
+  --packages [--json]  show composer package dependency graph
+  --types [path|Class::m] [--all]
+                       show resolved PHP types per file or symbol (HIGH+MEDIUM only by default)
+  --legacy [--json]    report non-PSR-4 files, dirs, and suggested mappings
   --print              dump the full cached map as JSON
   (no flags)           build the map + print a one-line summary
 

@@ -1,6 +1,6 @@
 export const MAP = ".claude/agentmap/map.json";
 export const MAP_LEGACY = ".claude/agentmap.json";
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const DAMPING = 0.85;
 export const TOL = 1e-6;
 export const MAX_ITER = 100;
