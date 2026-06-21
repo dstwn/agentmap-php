@@ -17,8 +17,8 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### PHP Type Resolution
 
-- [ ] **TYP-01**: Track types through assignment expressions (`$x = new Foo()` → type `Foo`, `$x = $y->method()` → return type)
-- [ ] **TYP-02**: Parse PHPDoc annotations (`@var`, `@return`, `@param`, `@property`) from docblocks using line-number-based comment attachment
+- [x] **TYP-01**: Track types through assignment expressions (`$x = new Foo()` → type `Foo`, `$x = $y->method()` → return type)
+- [x] **TYP-02**: Parse PHPDoc annotations (`@var`, `@return`, `@param`, `@property`) from docblocks using line-number-based comment attachment
 - [ ] **TYP-03**: Trace types through method chains (`$a->b()->c()->d()`) with configurable depth limit
 - [ ] **TYP-04**: Tag every resolved type with confidence level — HIGH (declared), MEDIUM (assigned/new/PHPDoc), LOW (inferred through chains)
 - [ ] **TYP-05**: Add `--types` CLI flag to inspect resolved type information per symbol or file
@@ -63,8 +63,8 @@ Deferred to future milestones.
 | CMP-03 | Phase 13 | Complete |
 | CMP-04 | Phase 16 | Pending |
 | CMP-05 | Phase 16 | Pending |
-| TYP-01 | Phase 14 | Pending |
-| TYP-02 | Phase 14 | Pending |
+| TYP-01 | Phase 14 | Complete |
+| TYP-02 | Phase 14 | Complete |
 | TYP-03 | Phase 15 | Pending |
 | TYP-04 | Phase 15 | Pending |
 | TYP-05 | Phase 16 | Pending |

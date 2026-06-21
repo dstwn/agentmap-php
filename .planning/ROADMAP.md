@@ -41,7 +41,7 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 **Milestone Goal:** Extend agentmap-php with composer dependency graph parsing, PHP type resolution beyond declared types, and legacy non-PSR-4 code detection.
 
 - [x] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans) (completed 2026-06-21)
-- [ ] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations
+- [x] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations (completed 2026-06-21)
 - [ ] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging
 - [ ] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4
 
@@ -81,16 +81,16 @@ Plans:
   3. Type resolution complements (doesn't replace) existing `EnhancedLaravelParser.inferTypes()` — both sets appear merged with declared types as baseline
   4. User observes no significant performance regression on laravel/framework benchmark (type resolution adds <200ms)
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans complete
 
 Plans:
 **Wave 1**
 
-- [ ] 14-01-PLAN.md — TypeResolver class + TDD test suite (Wave 1)
+- [x] 14-01-PLAN.md — TypeResolver class + TDD test suite (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 14-02-PLAN.md — map-builder.mjs integration + smoke test (Wave 2)
+- [x] 14-02-PLAN.md — map-builder.mjs integration + smoke test (Wave 2)
 
 #### Phase 15: Advanced Type Resolution
 
@@ -142,6 +142,6 @@ Plans:
 | 11. Laravel BENCH Fixture | v1.1 | 2/2 | Complete | 2026-06-19 |
 | 12. Verification & Polish | v1.1 | 1/1 | Complete | 2026-06-19 |
 | 13. Foundation — Composer Graph + Legacy Detection | v1.2 | 3/3 | Complete   | 2026-06-21 |
-| 14. PHP Type Resolution (MVP) | v1.2 | 0/0 | Not started | - |
+| 14. PHP Type Resolution (MVP) | v1.2 | 2/2 | Complete   | 2026-06-21 |
 | 15. Advanced Type Resolution | v1.2 | 0/0 | Not started | - |
 | 16. Integration & CLI | v1.2 | 0/0 | Not started | - |
