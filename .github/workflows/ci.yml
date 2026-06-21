@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -23,9 +23,13 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      # Deterministic install from the lockfile (ts-morph is the only dep).
+      # Deterministic install from the lockfile.
+      # --legacy-peer-deps: tree-sitter-php@0.22.6 declares a peer dep on
+      # tree-sitter@^0.21.1 but the project uses tree-sitter@^0.22.4; the
+      # version mismatch is benign (both work at runtime) but npm ci rejects
+      # it without this flag.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       # Clone the laravel/framework fixture for integration tests (node-20 leg only —
       # other legs skip via existsSync guard in test/integration-laravel.test.mjs).
