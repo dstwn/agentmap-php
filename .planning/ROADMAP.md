@@ -175,8 +175,10 @@ Plans:
   3. CI runs `--legacy` against laravel/framework fixture and asserts legacy warning output
   4. Integration tests skip gracefully (not fail) when laravel/framework fixture is absent
   5. All 256 existing tests still pass after integration test file is added
-**Plans**: TBD
-**UI hint**: no
+**Plans**: 2 plans
+Plans:
+- [ ] 18-01-PLAN.md — Write test/integration-laravel.test.mjs (Wave 1)
+- [ ] 18-02-PLAN.md — Add CI clone step to .github/workflows/ci.yml (Wave 2)
 
 #### Phase 19: Coverage Reporting
 
