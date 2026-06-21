@@ -34,6 +34,8 @@ let _phpParser = null;
 const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.init(); return _phpParser ??= p; };
 
 import { TypeResolver } from "./src/Core/TypeResolver.mjs";
+import { ComposerParser } from "./src/Core/ComposerParser.mjs";
+import { DEFAULT_CHAIN_DEPTH } from "./src/Core/constants.mjs";
 
 const MAP = ".claude/agentmap/map.json";
 const MAP_LEGACY = ".claude/agentmap.json"; // pre-namespacing path; read for migration
@@ -740,20 +742,44 @@ function build() {
       }
     }
   }
-  // --- TypeResolver: enrich PHP file entries with assignedTypes + phpDocTypes.
+  // --- TypeResolver: enrich PHP file entries with assignedTypes + phpDocTypes + chainTypes.
   {
     const typeResolver = new TypeResolver();
     const cwdp = process.cwd().replace(/\\/g, "/");
+    let psr4Map = {};
+    try {
+      const cp = new ComposerParser();
+      const parsed = cp.parse(process.cwd());
+      psr4Map = parsed?.psr4Map ?? {};
+    } catch (_) { /* no composer.json — degrade gracefully */ }
     for (const [filePath, entry] of Object.entries(files)) {
       if (!filePath.endsWith(".php") || filePath.includes("/vendor/")) continue;
       try {
         const text = readFileSync(filePath, "utf8");
         const { assignedTypes, phpDocTypes } = typeResolver.resolve(filePath, text, {}, cwdp);
+        const chainDepthLimit = (typeof config?.chainDepth === "number") ? config.chainDepth : DEFAULT_CHAIN_DEPTH;
+        const chainTypes = typeResolver.resolveChain(
+          typeResolver._lastRoot,
+          typeResolver._lastUseMap,
+          assignedTypes,
+          psr4Map,
+          cwdp,
+          chainDepthLimit
+        );
         entry.assignedTypes = assignedTypes;
         entry.phpDocTypes = phpDocTypes;
+        entry.chainTypes = chainTypes;
+        if (entry.enhanced?.types) {
+          entry.enhanced.types = entry.enhanced.types.map(t => ({
+            ...t,
+            confidence: "HIGH",
+            source: "declared",
+          }));
+        }
       } catch (_) {
         entry.assignedTypes = [];
         entry.phpDocTypes = [];
+        entry.chainTypes = [];
       }
     }
   }
