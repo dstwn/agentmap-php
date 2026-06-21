@@ -43,7 +43,7 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 - [x] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans) (completed 2026-06-21)
 - [x] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations (completed 2026-06-21)
 - [x] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging (completed 2026-06-21)
-- [ ] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4
+- [x] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4 (completed 2026-06-21)
 
 #### Phase 13: Foundation — Composer Graph + Legacy Detection
 
@@ -130,17 +130,17 @@ Plans:
   6. All existing CLI flags (`--map`, `--relates`, `--hubs`, `--symbols`, `--find`, etc.) work identically with no behavior changes
   7. `SCHEMA_VERSION` bumps from 3 to 4, triggering automatic rebuild on existing caches
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 
 Plans:
 **Wave 1** *(parallel)*
 
-- [ ] 16-01-PLAN.md — CLI test scaffolding: 4 RED test files for all new flags (Wave 1)
-- [ ] 16-02-PLAN.md — SCHEMA_VERSION 3→4 + --packages/--types/--legacy handlers (Wave 1, parallel)
+- [x] 16-01-PLAN.md — CLI test scaffolding: 4 RED test files for all new flags (Wave 1)
+- [x] 16-02-PLAN.md — SCHEMA_VERSION 3→4 + --packages/--types/--legacy handlers (Wave 1, parallel)
 
 **Wave 2** *(blocked on 16-02)*
 
-- [ ] 16-03-PLAN.md — PageRank package edge merging + --any package injection (Wave 2)
+- [x] 16-03-PLAN.md — PageRank package edge merging + --any package injection (Wave 2)
 
 ## Progress
 
@@ -163,4 +163,4 @@ Plans:
 | 13. Foundation — Composer Graph + Legacy Detection | v1.2 | 3/3 | Complete   | 2026-06-21 |
 | 14. PHP Type Resolution (MVP) | v1.2 | 2/2 | Complete   | 2026-06-21 |
 | 15. Advanced Type Resolution | v1.2 | 2/2 | Complete   | 2026-06-21 |
-| 16. Integration & CLI | v1.2 | 0/0 | Not started | - |
+| 16. Integration & CLI | v1.2 | 3/3 | Complete   | 2026-06-21 |

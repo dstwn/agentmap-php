@@ -12,8 +12,8 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 - [x] **CMP-01**: Parse `composer.json` for package metadata (name, version, description) and dependency edges (require, require-dev, conflict, replace, provide)
 - [x] **CMP-02**: Parse `composer.lock` for resolved dependency graph with exact installed versions
 - [x] **CMP-03**: Display version constraints with operator semantics (caret ^, tilde ~, exact, wildcard *, branch-name, stability flags @dev)
-- [ ] **CMP-04**: Merge package dependency edges into file-level PageRank with configurable weight cap to prevent edge explosion
-- [ ] **CMP-05**: Add `--packages` CLI flag to query package dependency graph, and integrate package names into `--any` router
+- [x] **CMP-04**: Merge package dependency edges into file-level PageRank with configurable weight cap to prevent edge explosion
+- [x] **CMP-05**: Add `--packages` CLI flag to query package dependency graph, and integrate package names into `--any` router
 
 ### PHP Type Resolution
 
@@ -61,8 +61,8 @@ Deferred to future milestones.
 | CMP-01 | Phase 13 | Complete |
 | CMP-02 | Phase 13 | Complete |
 | CMP-03 | Phase 13 | Complete |
-| CMP-04 | Phase 16 | Pending |
-| CMP-05 | Phase 16 | Pending |
+| CMP-04 | Phase 16 | Complete |
+| CMP-05 | Phase 16 | Complete |
 | TYP-01 | Phase 14 | Complete |
 | TYP-02 | Phase 14 | Complete |
 | TYP-03 | Phase 15 | Complete |
