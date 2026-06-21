@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Clone the laravel/framework fixture for integration tests (node-20 leg only —
+      # other legs skip via existsSync guard in test/integration-laravel.test.mjs).
+      - name: Clone laravel/framework fixture
+        if: matrix.node-version == 20
+        run: git clone --depth 1 https://github.com/laravel/framework tmp/eval/laravel-framework
+
       # Black-box suite — drives the real CLI as a subprocess against temp repos.
       - name: Run tests
         run: npm test
