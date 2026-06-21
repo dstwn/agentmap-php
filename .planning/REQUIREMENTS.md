@@ -58,24 +58,24 @@ Deferred to future milestones.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CMP-01 | | Pending |
-| CMP-02 | | Pending |
-| CMP-03 | | Pending |
-| CMP-04 | | Pending |
-| CMP-05 | | Pending |
-| TYP-01 | | Pending |
-| TYP-02 | | Pending |
-| TYP-03 | | Pending |
-| TYP-04 | | Pending |
-| TYP-05 | | Pending |
-| LEG-01 | | Pending |
-| LEG-02 | | Pending |
-| LEG-03 | | Pending |
+| CMP-01 | Phase 13 | Pending |
+| CMP-02 | Phase 13 | Pending |
+| CMP-03 | Phase 13 | Pending |
+| CMP-04 | Phase 16 | Pending |
+| CMP-05 | Phase 16 | Pending |
+| TYP-01 | Phase 14 | Pending |
+| TYP-02 | Phase 14 | Pending |
+| TYP-03 | Phase 15 | Pending |
+| TYP-04 | Phase 15 | Pending |
+| TYP-05 | Phase 16 | Pending |
+| LEG-01 | Phase 13 | Pending |
+| LEG-02 | Phase 13 | Pending |
+| LEG-03 | Phase 16 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-21*

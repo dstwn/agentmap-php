@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: PHP Type Resolution + Composer Dependency Graph
+milestone_name: "PHP Type Resolution + Composer Dependency Graph"
 status: planning
-last_updated: "2026-06-21T12:24:37.396Z"
+last_updated: "2026-06-21T15:00:00.000Z"
 last_activity: 2026-06-21
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,43 +17,59 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19 after v1.0 milestone)
+See: .planning/PROJECT.md (updated 2026-06-21 after v1.2 milestone start)
 
 **Core value:** Give PHP/Laravel developers the same repo-context superpower TS/JS projects get from agentmap
 
-**Current focus:** v1.2 — PHP Type Resolution + Composer Dependency Graph
-
-## Current Milestone
-
-**v1.2 PHP Type Resolution + Composer Dependency Graph** — Planning
-
-## Active Phase
-
-None — defining requirements
-
-## Status
-
-Milestone v1.2 started. Defining requirements for PHP type resolution and composer dependency graph.
-
-## Last Activity
-
-2026-06-21 — v1.2 milestone started
-
-## Notes
-
-- v1.1 delivered 99.6% token savings on laravel/framework, 100%/100% eval accuracy
-- v1.2 focus: ADV-01 (PHP type resolution) + ADV-04 (Composer dependency graph)
-- Legacy hybrid codebase detection for non-PSR-4 patterns
-- manobo-upgrade project assessment: ~80% coverage, v1.2 closes gaps
+**Current focus:** Phase 13 — Foundation: Composer Graph + Legacy Detection
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-21 — Milestone v1.2 started
+Phase: 13 of 16 (Foundation — Composer Graph + Legacy Detection)
+Plan: 0 of 0 in current phase
+Status: Ready to plan
+Last activity: 2026-06-21 — Roadmap created for v1.2 (Phases 13-16)
 
-## Operator Next Steps
+Progress: [░░░░░░░░░░] 0%
 
-- Define requirements for v1.2
-- Create roadmap with phased execution plan
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: N/A
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| *(no plans yet)* | - | - | - |
+
+**Recent Trend:**
+- N/A (first phase)
+
+## Accumulated Context
+
+### Decisions
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| PSR4Resolver built alongside legacy detection | LEG-01/02 require autoload parsing; PSR4Resolver is implementation mechanism | 13 |
+| 4 phases for v1.2 | Standard granularity; 3 categories compress into natural delivery boundaries | Roadmap |
+| Type MVP split from Advanced | Method chain tracing deferred per research recommendation; reduces risk | 14/15 |
+| All CLI flags consolidated into final phase | CLI wiring depends on all modules; avoids flag fragmentation across phases | 16 |
+| PageRank edge merging with configurable cap | Prevents edge explosion (Pitfall 4); cap default 1000 per dependency | 16 |
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-06-21 15:00
+Stopped at: Roadmap for v1.2 created (Phases 13-16); ready for `/gsd-plan-phase 13`
+Resume file: None
