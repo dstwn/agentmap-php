@@ -8,6 +8,16 @@ A fork of [agentmap](https://github.com/raymondchins/agentmap) that extends the 
 
 Give PHP/Laravel developers (and their AI coding agents) the same repo-context superpower TS/JS projects get from agentmap — ranked import graphs, queryable code maps, and dramatically reduced token budgets for understanding a codebase.
 
+## Current Milestone: v1.3 CI Integration Testing
+
+**Goal:** Harden the test pipeline with working CI, full test subdirectory coverage, integration tests against real fixtures, and coverage reporting.
+
+**Target features:**
+- Fix CI glob bug (missing `test/vue-sfc/` — 43 tests uncovered)
+- Keep Node 18/20/22 matrix
+- Integration tests against existing `laravel/framework` eval fixture for `--packages`, `--types`, `--legacy`, and core flags
+- Coverage reporting step in CI
+
 ## Current State (v1.2)
 
 **Shipped:** 2026-06-21 (v1.2 PHP Type Resolution + Composer Dependency Graph)
@@ -53,10 +63,11 @@ Give PHP/Laravel developers (and their AI coding agents) the same repo-context s
 - ✓ BENCH-01..04: Laravel benchmark fixture — v1.1 (99.6% savings)
 - ✓ TEST-01..02: All tests pass, reproducible numbers — v1.1
 
-### Active (v1.2)
+### Active (v1.3)
 
-- [ ] **ADV-01**: Full PHP type resolution — trace through assignments, returns, and method chains
-- [ ] **ADV-04**: Composer package dependency graph — parse `composer.json`/`composer.lock` for package-level edges
+- [ ] **CI-01**: CI runs all test subdirectories (test/*.test.mjs + test/**/*.test.mjs)
+- [ ] **CI-02**: Integration tests assert real CLI output against laravel/framework eval fixture
+- [ ] **CI-03**: Coverage reporting step added to CI pipeline
 
 ### Future (post-v1.2)
 
@@ -120,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-21 after v1.2 milestone start*
+*Last updated: 2026-06-21 after v1.3 milestone start*
