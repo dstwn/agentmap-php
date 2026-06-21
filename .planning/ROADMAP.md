@@ -40,7 +40,7 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 
 **Milestone Goal:** Extend agentmap-php with composer dependency graph parsing, PHP type resolution beyond declared types, and legacy non-PSR-4 code detection.
 
-- [ ] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans)
+- [x] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans) (completed 2026-06-21)
 - [ ] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations
 - [ ] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging
 - [ ] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4
@@ -58,16 +58,16 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
   4. User sees heuristic warnings for directories with non-PSR-4 structure (`classes/`, `lib/`, `modules/`, `src/` without namespace prefix)
   5. User gets graceful warning messages (not crashes) when composer files are missing or corrupt
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 Plans:
 **Wave 1**
 
-- [ ] 13-01-PLAN.md — constants + PSR4Resolver + ComposerParser (Wave 1)
-- [ ] 13-02-PLAN.md — LegacyDetector + unit test suite (Wave 1, parallel)
+- [x] 13-01-PLAN.md — constants + PSR4Resolver + ComposerParser (Wave 1)
+- [x] 13-02-PLAN.md — LegacyDetector + unit test suite (Wave 1, parallel)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 13-03-PLAN.md — map-builder.mjs integration + full regression gate (Wave 2)
+- [x] 13-03-PLAN.md — map-builder.mjs integration + full regression gate (Wave 2)
 
 #### Phase 14: PHP Type Resolution (MVP)
 
@@ -132,7 +132,7 @@ Plans:
 | 10. Laravel EVAL Fixture | v1.1 | 2/2 | Complete | 2026-06-19 |
 | 11. Laravel BENCH Fixture | v1.1 | 2/2 | Complete | 2026-06-19 |
 | 12. Verification & Polish | v1.1 | 1/1 | Complete | 2026-06-19 |
-| 13. Foundation — Composer Graph + Legacy Detection | v1.2 | 0/0 | Not started | - |
+| 13. Foundation — Composer Graph + Legacy Detection | v1.2 | 3/3 | Complete   | 2026-06-21 |
 | 14. PHP Type Resolution (MVP) | v1.2 | 0/0 | Not started | - |
 | 15. Advanced Type Resolution | v1.2 | 0/0 | Not started | - |
 | 16. Integration & CLI | v1.2 | 0/0 | Not started | - |

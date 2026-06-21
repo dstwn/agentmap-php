@@ -9,9 +9,9 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### Composer Dependency Graph
 
-- [ ] **CMP-01**: Parse `composer.json` for package metadata (name, version, description) and dependency edges (require, require-dev, conflict, replace, provide)
-- [ ] **CMP-02**: Parse `composer.lock` for resolved dependency graph with exact installed versions
-- [ ] **CMP-03**: Display version constraints with operator semantics (caret ^, tilde ~, exact, wildcard *, branch-name, stability flags @dev)
+- [x] **CMP-01**: Parse `composer.json` for package metadata (name, version, description) and dependency edges (require, require-dev, conflict, replace, provide)
+- [x] **CMP-02**: Parse `composer.lock` for resolved dependency graph with exact installed versions
+- [x] **CMP-03**: Display version constraints with operator semantics (caret ^, tilde ~, exact, wildcard *, branch-name, stability flags @dev)
 - [ ] **CMP-04**: Merge package dependency edges into file-level PageRank with configurable weight cap to prevent edge explosion
 - [ ] **CMP-05**: Add `--packages` CLI flag to query package dependency graph, and integrate package names into `--any` router
 
@@ -25,8 +25,8 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### Legacy Non-PSR-4 Detection
 
-- [ ] **LEG-01**: Parse `autoload.classmap` and `autoload.files` from `composer.json` for non-PSR-4 file registration
-- [ ] **LEG-02**: Detect source directories via heuristic patterns (`classes/`, `lib/`, `modules/`, `src/` without PSR-4 namespace prefix)
+- [x] **LEG-01**: Parse `autoload.classmap` and `autoload.files` from `composer.json` for non-PSR-4 file registration
+- [x] **LEG-02**: Detect source directories via heuristic patterns (`classes/`, `lib/`, `modules/`, `src/` without PSR-4 namespace prefix)
 - [ ] **LEG-03**: Add `--legacy` CLI flag to report non-PSR-4 files, unregistered directories, and suggested PSR-4 mappings
 
 ## v2 Requirements
@@ -58,9 +58,9 @@ Deferred to future milestones.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CMP-01 | Phase 13 | Pending |
-| CMP-02 | Phase 13 | Pending |
-| CMP-03 | Phase 13 | Pending |
+| CMP-01 | Phase 13 | Complete |
+| CMP-02 | Phase 13 | Complete |
+| CMP-03 | Phase 13 | Complete |
 | CMP-04 | Phase 16 | Pending |
 | CMP-05 | Phase 16 | Pending |
 | TYP-01 | Phase 14 | Pending |
@@ -68,11 +68,12 @@ Deferred to future milestones.
 | TYP-03 | Phase 15 | Pending |
 | TYP-04 | Phase 15 | Pending |
 | TYP-05 | Phase 16 | Pending |
-| LEG-01 | Phase 13 | Pending |
-| LEG-02 | Phase 13 | Pending |
+| LEG-01 | Phase 13 | Complete |
+| LEG-02 | Phase 13 | Complete |
 | LEG-03 | Phase 16 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 13 total
 - Mapped to phases: 13
 - Unmapped: 0 ✓
