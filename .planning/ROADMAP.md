@@ -104,7 +104,16 @@ Plans:
   3. Method chain resolution respects configurable depth limit without runaway recursion (warning logged at limit)
   4. Default type output shows only HIGH+MEDIUM confidence types; `--all` flag reveals LOW confidence
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 15-01-PLAN.md — DEFAULT_CHAIN_DEPTH constant + chains.php fixture + RED tests (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 15-02-PLAN.md — resolveChain() implementation + agentmap.mjs chainTypes/backfill wiring (Wave 2)
 
 #### Phase 16: Integration & CLI
 
