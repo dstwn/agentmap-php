@@ -7,6 +7,8 @@ import { sourceFingerprint } from "./cache.mjs";
 import { rankSymbols } from "./rank.mjs";
 import { pagerank } from "./graph.mjs";
 import { extractVueScripts, vueVirtualPath } from "./vue.mjs";
+import { ComposerParser } from "./ComposerParser.mjs";
+import { LegacyDetector } from "./LegacyDetector.mjs";
 
 export function featureOf(path) {
   const m = path.match(/(?:^|.*\/)(?:src\/)?app\/(.+)/);
@@ -340,11 +342,18 @@ export function build() {
 
   for (const p of nodes) delete files[p].defaultExportName;
 
+  const composerResult = new ComposerParser().parse(cwd);
+  const legacyWarnings = new LegacyDetector().detect(
+    cwd, composerResult.psr4Map, composerResult.classmaps, composerResult.autoFiles
+  );
+
   const sha = currentSha();
   const out = {
     schema: SCHEMA_VERSION, generatedSha: sha, dirty: dirtyCount(), fileCount: nodes.length,
     fingerprint: sha ? undefined : sourceFingerprint(),
     hubs, features, rankedSymbols: rankedSymbols.slice(0, RANKED_SYMBOLS_LIMIT), files,
+    packages: composerResult.packages,
+    legacyWarnings,
   };
   mkdirSync(".claude/agentmap", { recursive: true });
   const tmp = MAP + ".tmp";
