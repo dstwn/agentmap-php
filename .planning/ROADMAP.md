@@ -40,7 +40,7 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
 
 **Milestone Goal:** Extend agentmap-php with composer dependency graph parsing, PHP type resolution beyond declared types, and legacy non-PSR-4 code detection.
 
-- [ ] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns
+- [ ] **Phase 13: Foundation — Composer Graph + Legacy Detection** - Parse composer.json/lock for package graph; detect non-PSR-4 legacy patterns (3 plans)
 - [ ] **Phase 14: PHP Type Resolution (MVP)** - Track types through assignments and PHPDoc annotations
 - [ ] **Phase 15: Advanced Type Resolution** - Trace method chain types with confidence level tagging
 - [ ] **Phase 16: Integration & CLI** - Wire all features into CLI flags; merge package edges into PageRank; schema 3→4
@@ -55,7 +55,11 @@ See: [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) · [v1.1-REQUIREMENTS.md](mil
   3. User can identify files registered via `autoload.classmap` or `autoload.files` in composer.json
   4. User sees heuristic warnings for directories with non-PSR-4 structure (`classes/`, `lib/`, `modules/`, `src/` without namespace prefix)
   5. User gets graceful warning messages (not crashes) when composer files are missing or corrupt
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 13-01-PLAN.md — constants + PSR4Resolver + ComposerParser (Wave 1)
+- [ ] 13-02-PLAN.md — LegacyDetector + unit test suite (Wave 1, parallel)
+- [ ] 13-03-PLAN.md — map-builder.mjs integration + full regression gate (Wave 2)
 
 #### Phase 14: PHP Type Resolution (MVP)
 **Goal**: Types are resolved from variable assignments and PHPDoc annotations, complementing existing declared-type inference
