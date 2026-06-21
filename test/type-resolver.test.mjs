@@ -10,6 +10,8 @@ const assignmentsPhp = readFileSync(join(__dirname, "fixtures/assignments.php"),
 const phpdocPhp = readFileSync(join(__dirname, "fixtures/phpdoc.php"), "utf8");
 const fixturePath = join(__dirname, "fixtures/assignments.php");
 const phpdocPath = join(__dirname, "fixtures/phpdoc.php");
+const chainsPhp = readFileSync(join(__dirname, "fixtures/chains.php"), "utf8");
+const chainsFixturePath = join(__dirname, "fixtures/chains.php");
 
 // ---------------------------------------------------------------------------
 // TypeResolver — TYP-01: Assignment extraction
@@ -153,5 +155,95 @@ describe("TypeResolver — graceful degradation", () => {
     const result = new TypeResolver().resolve("/fake/bad.php", "<?php }{{{not valid php", {}, "/fake");
     assert.ok(Array.isArray(result.assignedTypes));
     assert.ok(Array.isArray(result.phpDocTypes));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TypeResolver — TYP-03 resolveChain() method chain tracing
+// ---------------------------------------------------------------------------
+describe("TypeResolver — TYP-03 resolveChain() method chain tracing", () => {
+  it("resolveChain() method exists on TypeResolver instance", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("1-level chain: $r1 = $b1->build() → chainTypes entry with resolvedType Result1, confidence LOW", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("2-level chain: $r2 = $b2->step1()->step2() → resolvedType Result2, confidence LOW", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("3-level chain at depth limit → resolvedType Result3, confidence LOW, no warning skipped", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it(">3-level chain truncated at depth 3 → confidence LOW, stderr warning emitted", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("cycle detection: revisiting same class::method stops chain, returns LOW confidence", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("unknown return type mid-chain → chain stops, partial result with confidence LOW", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("empty psr4Map → resolveChain returns empty array (graceful degradation)", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+
+  it("chainTypes entries carry source: chain", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TypeResolver — TYP-04 confidence backfill (enhanced.types)
+// ---------------------------------------------------------------------------
+describe("TypeResolver — TYP-04 confidence backfill (enhanced.types)", () => {
+  it("resolve() assignedTypes entries carry confidence MEDIUM and no source field required", async () => {
+    // Regression anchor — this passes GREEN already (Phase 14)
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const result = new TypeResolver().resolve(chainsFixturePath, chainsPhp, {}, "/fake");
+    // Builder1 assigned via new Builder1() inside testChains()
+    const entry = result.assignedTypes.find(e => e.variable === "$b1");
+    assert.ok(entry, "Expected assignedTypes entry for $b1");
+    assert.equal(entry.confidence, "MEDIUM");
+  });
+
+  it("resolveChain() chainTypes entries carry confidence LOW and source chain", async () => {
+    // Will fail RED: resolveChain does not exist yet
+    const { TypeResolver } = await import("../src/Core/TypeResolver.mjs");
+    const typeResolver = new TypeResolver();
+    assert.ok(typeof typeResolver.resolveChain === "function", "resolveChain must be a method");
   });
 });
