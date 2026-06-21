@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.2 PHP Type Resolution + Composer Dependency Graph (Shipped: 2026-06-21)
+
+**Phases completed:** 4 phases, 10 plans, 21 tasks
+
+**Key accomplishments:**
+
+- ComposerParser parsing all 6 composer.json link types with raw constraints + lock-resolved versions; PSR4Resolver extracting PhpParser._resolvePsr4 as standalone utility; COMPOSER_FILES and LEGACY_DIRS constants added — 17 new tests, 168/168 suite passing
+- LegacyDetector detecting uncovered legacy dirs (classes/, lib/, modules/, src/) and classmap/files non-PSR-4 entries, plus 22-test suite covering all 5 phase requirements
+- map-builder.mjs build() wired to ComposerParser and LegacyDetector; map.json now has top-level packages and legacyWarnings arrays with schema held at 3
+- Tree-sitter TypeResolver extracting assignment types and PHPDoc tags with FQCN resolution via use-import map — 15/15 TDD tests green, 60/60 full suite regression clean
+- agentmap.mjs build() enriched to call TypeResolver per PHP file — map.json PHP entries now carry assignedTypes[] and phpDocTypes[] alongside existing enhanced data
+- TDD RED foundation: DEFAULT_CHAIN_DEPTH=3 constant, 4-depth chains.php fixture, and 10 failing tests for resolveChain() chain tracing (TYP-03/TYP-04)
+- resolveChain() chain tracing on TypeResolver with PSR4-backed class walking, depth limiting, cycle detection, and enhanced.types confidence backfill in agentmap.mjs
+- 4 RED test files scaffolded covering all phase-16 requirements: --packages text+JSON output, package PageRank field, --types per-file and confidence filtering, --legacy warnings and JSON shape
+- --packages/--types/--legacy CLI handlers wired into agentmap.mjs with CMP-04 package PageRank edge merging and SCHEMA_VERSION bumped 3→4
+- PKG_EDGE_CAP constant extracted from hardcoded 1000, and package name matches injected into --any router between file and symbol branches
+
+---
+
 ## v1.1 Docs Sync + PHP Eval
 
 **Shipped:** 2026-06-19
