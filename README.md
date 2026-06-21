@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/hero.png" alt="agentmap — ~98% token savings to understand a codebase (up to 99.9% per task)" width="100%">
-</p>
-
 # agentmap-php
 
 **The repo map your coding agent is _forced_ to use — now for PHP and Laravel, on par with TS/JS.**
