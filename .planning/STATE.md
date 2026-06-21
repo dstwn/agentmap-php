@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: PHP Type Resolution + Composer Dependency Graph
-current_phase: 16
-current_phase_name: Integration & CLI
-status: executing
+current_phase: 2
+status: Awaiting next milestone
 stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-06-21T15:56:36.833Z"
+last_updated: "2026-06-21T16:03:29.219Z"
 last_activity: 2026-06-21
-last_activity_desc: Phase 16 execution started
+last_activity_desc: Milestone v1.2 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 10
   completed_plans: 11
   percent: 100
+current_phase_name: Integration & CLI
 ---
 
 # Project State
@@ -29,12 +29,10 @@ See: .planning/PROJECT.md (updated 2026-06-21 after v1.2 milestone start)
 
 ## Current Position
 
-Phase: 16 (Integration & CLI) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
-Last activity: 2026-06-21 — Phase 16 execution started
-
-Progress: [░░░░░░░░░░] 0%
+Phase: Milestone v1.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-21 — Milestone v1.2 completed and archived
 
 ## Performance Metrics
 
@@ -87,3 +85,7 @@ None yet.
 Last session: 2026-06-21T15:56:31.384Z
 Stopped at: Completed 13-03-PLAN.md
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
