@@ -1,5 +1,7 @@
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { PSR4Resolver } from "./PSR4Resolver.mjs";
+import { DEFAULT_CHAIN_DEPTH } from "./constants.mjs";
 
 const _require = createRequire(import.meta.url);
 
@@ -26,6 +28,8 @@ export class TypeResolver {
       const tree = this._parser.parse(text);
       const root = tree.rootNode;
       const useMap = this._collectUseImports(root);
+      this._lastRoot = root;
+      this._lastUseMap = useMap;
       const assignedTypes = this._extractAssignments(root, useMap, psr4Map, projectRoot);
       const phpDocTypes = this._extractPhpDoc(root);
       return { assignedTypes, phpDocTypes };
@@ -164,5 +168,109 @@ export class TypeResolver {
     }
 
     return tags;
+  }
+
+  _peelChain(node) {
+    const steps = [];
+    let cur = node;
+    while (cur.type === "member_call_expression") {
+      const methodNode = cur.child(2);
+      steps.unshift({ method: methodNode?.text ?? "?" });
+      cur = cur.child(0);
+    }
+    return { rootObject: cur, steps };
+  }
+
+  _findMethodReturnType(root, methodName) {
+    let found = null;
+    this._walk(root, (node) => {
+      if (node.type !== "method_declaration") return;
+      const nameNode = this._findChild(node, ["name"]);
+      if (nameNode?.text !== methodName) return;
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (c.type === "named_type" || c.type === "primitive_type") {
+          found = c.text.replace(/^\\/, "");
+          break;
+        }
+        if (c.type === "optional_type") {
+          const inner = this._findChild(c, ["named_type"]);
+          found = inner ? inner.text.replace(/^\\/, "") : null;
+          break;
+        }
+        if (c.type === "union_type") {
+          const parts = c.text.split("|").map(s => s.trim().replace(/^\\/, ""));
+          found = parts.find(t => t !== "null" && t !== "void" && !/^(int|string|bool|float|array|mixed)$/.test(t)) ?? null;
+          break;
+        }
+      }
+    });
+    return found;
+  }
+
+  _walkChain(currentClass, steps, useMap, psr4Map, projectRoot, depthLimit, visited, fileCache = new Map(), depth = 0) {
+    const results = [];
+    for (const step of steps) {
+      if (depth >= depthLimit) {
+        process.stderr.write(`# agentmap: chain depth limit (${depthLimit}) reached at ${currentClass}::${step.method}\n`);
+        break;
+      }
+      const key = `${currentClass}::${step.method}`;
+      if (visited.has(key)) break;
+      visited.add(key);
+
+      const fqcn = useMap[currentClass] || currentClass;
+      let filePath = null;
+      if (psr4Map && projectRoot && Object.keys(psr4Map).length > 0) {
+        filePath = new PSR4Resolver().resolve(fqcn, projectRoot, psr4Map);
+      }
+      if (!filePath) break;
+
+      let classRoot = fileCache.get(filePath);
+      if (!classRoot) {
+        try {
+          const text = readFileSync(filePath, "utf8");
+          classRoot = this._parser.parse(text).rootNode;
+          fileCache.set(filePath, classRoot);
+        } catch { break; }
+      }
+
+      const returnType = this._findMethodReturnType(classRoot, step.method);
+      const resolvedType = (returnType === "static" || returnType === "self") ? currentClass : returnType;
+      results.push({ method: step.method, class: currentClass, returnType: resolvedType ?? null });
+      if (!resolvedType) break;
+
+      currentClass = resolvedType;
+      depth++;
+    }
+    return results;
+  }
+
+  resolveChain(root, useMap, assignedTypes, psr4Map, projectRoot, depthLimit = DEFAULT_CHAIN_DEPTH) {
+    const results = [];
+    if (!root) return results;
+    this._walk(root, (node) => {
+      if (node.type !== "assignment_expression") return;
+      const lhs = node.child(0);
+      const rhs = node.child(2);
+      if (!lhs || rhs?.type !== "member_call_expression") return;
+      const variable = lhs.text;
+      const { rootObject, steps } = this._peelChain(rhs);
+      const rootType = assignedTypes.find(e => e.variable === rootObject.text)?.className;
+      if (!rootType) return;
+      const visited = new Set();
+      const fileCache = new Map();
+      const chain = this._walkChain(rootType, steps, useMap, psr4Map, projectRoot, depthLimit, visited, fileCache, 0);
+      if (chain.length > 0) {
+        results.push({
+          variable,
+          chain,
+          resolvedType: chain[chain.length - 1].returnType,
+          confidence: "LOW",
+          source: "chain",
+        });
+      }
+    });
+    return results;
   }
 }
