@@ -84,7 +84,12 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 14-01-PLAN.md — TypeResolver class + TDD test suite (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 14-02-PLAN.md — map-builder.mjs integration + smoke test (Wave 2)
 
 #### Phase 15: Advanced Type Resolution
