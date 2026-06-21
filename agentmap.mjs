@@ -33,6 +33,8 @@ import { EnhancedLaravelParser as PhpParserClass } from "./src/Core/EnhancedLara
 let _phpParser = null;
 const getPhpParser = () => { const p = _phpParser ?? (new PhpParserClass()); p.init(); return _phpParser ??= p; };
 
+import { TypeResolver } from "./src/Core/TypeResolver.mjs";
+
 const MAP = ".claude/agentmap/map.json";
 const MAP_LEGACY = ".claude/agentmap.json"; // pre-namespacing path; read for migration
 // Bumped 2 → 3: Vue SFC support. `.vue` files now appear in the map and the
@@ -735,6 +737,23 @@ function build() {
         files[fileKey] = { exports: phpExports, imports: phpImports, importedSymbols: phpImportedSymbols, dependents: dependents[fileKey] ?? [], ...(Object.keys(enhanced).length ? { enhanced } : {}) };
       } catch (e) {
         process.stderr.write(`# agentmap: skipped ${f} (PHP parse error: ${e?.message ?? e})\n`);
+      }
+    }
+  }
+  // --- TypeResolver: enrich PHP file entries with assignedTypes + phpDocTypes.
+  {
+    const typeResolver = new TypeResolver();
+    const cwdp = process.cwd().replace(/\\/g, "/");
+    for (const [filePath, entry] of Object.entries(files)) {
+      if (!filePath.endsWith(".php") || filePath.includes("/vendor/")) continue;
+      try {
+        const text = readFileSync(filePath, "utf8");
+        const { assignedTypes, phpDocTypes } = typeResolver.resolve(filePath, text, {}, cwdp);
+        entry.assignedTypes = assignedTypes;
+        entry.phpDocTypes = phpDocTypes;
+      } catch (_) {
+        entry.assignedTypes = [];
+        entry.phpDocTypes = [];
       }
     }
   }

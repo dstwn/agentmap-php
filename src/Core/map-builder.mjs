@@ -9,7 +9,6 @@ import { pagerank } from "./graph.mjs";
 import { extractVueScripts, vueVirtualPath } from "./vue.mjs";
 import { ComposerParser } from "./ComposerParser.mjs";
 import { LegacyDetector } from "./LegacyDetector.mjs";
-import { TypeResolver } from "./TypeResolver.mjs";
 
 export function featureOf(path) {
   const m = path.match(/(?:^|.*\/)(?:src\/)?app\/(.+)/);
@@ -347,20 +346,6 @@ export function build() {
   const legacyWarnings = new LegacyDetector().detect(
     cwd, composerResult.psr4Map, composerResult.classmaps, composerResult.autoFiles
   );
-
-  const typeResolver = new TypeResolver();
-  for (const [filePath, entry] of Object.entries(files)) {
-    if (!filePath.endsWith(".php") || filePath.includes("/vendor/")) continue;
-    try {
-      const text = readFileSync(filePath, "utf8");
-      const { assignedTypes, phpDocTypes } = typeResolver.resolve(filePath, text, composerResult.psr4Map || {}, cwd);
-      entry.assignedTypes = assignedTypes;
-      entry.phpDocTypes = phpDocTypes;
-    } catch (_) {
-      entry.assignedTypes = [];
-      entry.phpDocTypes = [];
-    }
-  }
 
   const sha = currentSha();
   const out = {
