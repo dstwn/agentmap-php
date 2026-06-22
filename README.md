@@ -16,9 +16,11 @@ DDD / Action / Repository / Service detection, Artisan command signatures, middl
 migration schemas, and declared-type + method-call tracing.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
-[![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](#)
+[![npm](https://img.shields.io/npm/v/@dstwn/agentmap-php)](https://www.npmjs.com/package/@dstwn/agentmap-php)
+[![CI](https://github.com/dstwn/agentmap-php/actions/workflows/ci.yml/badge.svg)](https://github.com/dstwn/agentmap-php/actions/workflows/ci.yml)
+[![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](#)
 
-> **A fork of [agentmap](https://github.com/raymondchins/agentmap) by Raymond Surya Chin.** The
+> **A fork of [agentmap](https://github.com/raymondchins/agentmap) by Raymond Surya Chin** maintained by [@dstwn](https://github.com/dstwn). The
 > upstream tool is TS/JS-only (`ts-morph`); this fork adds first-class PHP and Laravel support via
 > `tree-sitter-php` while preserving every existing TS/JS capability. All credit for the original
 > design, PageRank ranking, `--any` router, and agent-loop wiring goes upstream.
@@ -111,7 +113,7 @@ agent toward *before* it falls back to serial grep.
 | **Token-budget output** | Yes — `--map [--tokens N]` ranked digest | Yes (built into Aider's context) | Partial | Yes (size caps) | Yes (templates/caps) |
 | **Agent-loop integration** | **Yes — post-commit auto-refresh + PreToolUse hook** | In-process (Aider only) | No | No | No |
 | **Dependencies** | `ts-morph` + `tree-sitter` + `tree-sitter-php` | Python + tree-sitter stack | Python + tree-sitter | Node | Rust binary |
-| **Install** | `node agentmap.mjs` (GitHub fork) | `pip install aider` | `pip install` | `npx`/global | `cargo`/binary |
+| **Install** | `npm i @dstwn/agentmap-php` | `pip install aider` | `pip install` | `npx`/global | `cargo`/binary |
 
 What that table is **not** claiming: agentmap-php is a **file-level import graph**, not a full
 call-site/reference resolver (see [Scope & limitations](#scope--limitations)). The differentiators
@@ -163,7 +165,7 @@ rebase/merge/cherry-pick and no-ops if Node is missing.
 The hooks ship inside the npm package. The simplest setup:
 
 ```bash
-npx @raymondchins/agentmap --install-hooks
+npx @dstwn/agentmap-php --install-hooks
 ```
 
 This copies `hooks/post-commit` into `.git/hooks/`, sets it executable, ensures
@@ -178,7 +180,7 @@ chmod +x .git/hooks/post-commit
 ```
 
 The hook auto-locates the builder: a local `agentmap.mjs`, then `scripts/agentmap.mjs`, then
-the installed `agentmap` binary, then `npx --no-install @raymondchins/agentmap`.
+the installed `agentmap` binary, then `npx --no-install @dstwn/agentmap-php`.
 
 ### 2. Force the agent to use it — `PreToolUse` hook
 
@@ -224,7 +226,7 @@ agent is steered to it the moment it reaches for a dependency-shaped grep or Bas
 ### 3. Agent skills (Cursor, Claude Code, Codex, OpenCode, Gemini, Antigravity, Copilot)
 
 ```bash
-npx @raymondchins/agentmap --install-skill
+npx @dstwn/agentmap-php --install-skill
 ```
 
 Copies packaged **SKILL.md** files and a **Cursor rule** (`.cursor/rules/agentmap.mdc`,
@@ -262,16 +264,29 @@ Pair with `--install-hooks` (Claude Code) or `--mcp` (Cursor MCP).
 
 ## Quickstart
 
-This fork ships from GitHub (not npm). Clone it, then run against any repo:
+**Install from npm:**
 
 ```bash
-node /path/to/agentmap-php/agentmap.mjs --any <query>
+npm install @dstwn/agentmap-php
 ```
 
-…or run it directly from a checkout of the repo you're mapping:
+Then run against any repo:
 
 ```bash
-node agentmap.mjs --any <query>
+npx agentmap --any <query>
+```
+
+Or run it directly from your repo root after installing locally:
+
+```bash
+node node_modules/@dstwn/agentmap-php/agentmap.mjs --any <query>
+```
+
+**Or clone the repo and run directly:**
+
+```bash
+git clone https://github.com/dstwn/agentmap-php
+node /path/to/agentmap-php/agentmap.mjs --any <query>
 ```
 
 The first run builds and caches the map to `.claude/agentmap.json` (add it to
