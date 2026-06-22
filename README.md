@@ -625,6 +625,32 @@ Honesty first — this is deliberately a small, sharp tool, not a universal code
 
 ---
 
+## Works well with
+
+agentmap-php reduces **what** goes into context. These tools reduce **how much** everything else costs — they stack multiplicatively.
+
+| Tool | What it does | Token saving |
+|------|-------------|-------------|
+| **agentmap-php** (this) | Replaces full file dumps with a ranked repo map | ~98% on context |
+| **[rtk](https://github.com/rtk-ai/rtk)** | Compresses CLI command output (`git diff`, `ls`, etc.) | 60–90% per command |
+| **[caveman](https://github.com/juliusbrussee/caveman)** | Compresses prompt/response language to terse caveman style | ~65% per message |
+
+Used together, they attack token cost at three different layers — context, tool output, and language — without any overlap or conflict.
+
+**Install all three:**
+
+```bash
+# agentmap-php
+npm install @dstwn/agentmap-php
+npx agentmap --install-hooks
+
+# rtk (Rust binary — see https://github.com/rtk-ai/rtk for install)
+
+# caveman (Claude Code skill — see https://github.com/juliusbrussee/caveman for install)
+```
+
+---
+
 ## Contributing
 
 Issues and PRs welcome. High-value directions:
