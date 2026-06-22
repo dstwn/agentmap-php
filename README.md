@@ -631,11 +631,21 @@ agentmap-php reduces **what** goes into context. These tools reduce **how much**
 
 | Tool | What it does | Token saving |
 |------|-------------|-------------|
-| **agentmap-php** (this) | Replaces full file dumps with a ranked repo map | ~98% on context |
-| **[rtk](https://github.com/rtk-ai/rtk)** | Compresses CLI command output (`git diff`, `ls`, etc.) | 60–90% per command |
+| **agentmap-php** (this) | Replaces full file dumps with a ranked repo map | **99%+ on context** |
+| **[rtk](https://github.com/rtk-ai/rtk)** | Compresses CLI command output (`git diff`, `ls`, docker, kubectl, etc.) | 10–90% per command |
 | **[caveman](https://github.com/juliusbrussee/caveman)** | Compresses prompt/response language to terse caveman style | ~65% per message |
 
 Used together, they attack token cost at three different layers — context, tool output, and language — without any overlap or conflict.
+
+### Benchmark: laravel/framework (2947 PHP files, real numbers)
+
+| Scenario | Without agentmap | With agentmap | Saving |
+|----------|-----------------|---------------|--------|
+| Session start (full repo dump) | ~1,782,828 tok | ~1,496 tok (`--map`) | **99.9%** |
+| Find Auth subsystem | ~45,733 tok (grep 66 files) | ~7,318 tok (`--any Auth`) | **84%** |
+| Dependency graph | ~1,782,828 tok | ~2,771 tok (`--packages`) | **99.8%** |
+
+**rtk** savings vary by command — most impactful on noisy outputs (`docker ps`, `kubectl get pods`, `npm install`); modest on already-compact code commands. **caveman** stacks on top for response verbosity. **agentmap is the dominant saving** for PHP/Laravel codebases.
 
 **Install all three:**
 
