@@ -8,7 +8,7 @@ Two small, dependency-free files wire both up.
 ```
 hooks/
   agentmap-nudge.mjs  PreToolUse(Grep) nudge → "use agentmap --any first"
-  post-commit         git hook → rebuilds .claude/agentmap.json after each commit
+  post-commit         git hook → rebuilds .claude/agentmap/map.json after each commit
   INSTALL.md          ← you are here
 ```
 
@@ -59,11 +59,11 @@ node agentmap.mjs        # or: node /path/to/agentmap-php/agentmap.mjs
 # → agentmap: N files | M features | top hub: ...
 ```
 
-This writes `.claude/agentmap.json`. Add it to `.gitignore` (it's a derived
+This writes `.claude/agentmap/map.json`. Add it to `.gitignore` (it's a derived
 artifact, rebuilt on every commit):
 
 ```bash
-echo ".claude/agentmap.json" >> .gitignore
+echo ".claude/agentmap/" >> .gitignore
 ```
 
 ---
@@ -136,7 +136,7 @@ agentmap --install-hooks
 ```
 
 This copies `hooks/post-commit` to `.git/hooks/post-commit`, chmods it, ensures
-`.claude/agentmap.json` is in `.gitignore`, and auto-wires the Claude Code
+`.claude/agentmap/` is in `.gitignore`, and auto-wires the Claude Code
 `PreToolUse(Grep)` nudge into `.claude/settings.json` (merge-safe — preserves
 existing settings, idempotent on re-run) — enforcement on by default, all in one
 step. No manual paste needed.
@@ -162,7 +162,7 @@ global `agentmap` → `npx --no-install @raymondchins/agentmap`. If none is foun
 git commit --allow-empty -m "test: agentmap post-commit"
 # wait a moment for the background rebuild, then:
 git rev-parse --short HEAD
-node -e "console.log(require('./.claude/agentmap.json').generatedSha)"
+node -e "console.log(require('./.claude/agentmap/map.json').generatedSha)"
 # the two SHAs should match
 ```
 
@@ -203,8 +203,8 @@ cp "$HOOKS/post-commit" "$ROOT/.git/hooks/post-commit"
 chmod +x "$ROOT/.git/hooks/post-commit"
 
 # Ignore the derived map + first build
-grep -qxF ".claude/agentmap.json" "$ROOT/.gitignore" 2>/dev/null \
-  || echo ".claude/agentmap.json" >> "$ROOT/.gitignore"
+grep -qxF ".claude/agentmap/" "$ROOT/.gitignore" 2>/dev/null \
+  || echo ".claude/agentmap/" >> "$ROOT/.gitignore"
 # Fork ships from GitHub, not npm — prefer a repo-local agentmap.mjs (PHP-aware).
 ( cd "$ROOT" && node agentmap.mjs ) || true
 
@@ -224,7 +224,7 @@ the snippet from step 1b by hand.)
 
 ## How they reinforce each other
 
-1. You commit → **post-commit** rebuilds `.claude/agentmap.json` in the
+1. You commit → **post-commit** rebuilds `.claude/agentmap/map.json` in the
    background → the map is always current.
 2. The agent reaches for a who-imports / reuse / `<Component>` grep →
    **PreToolUse nudge** fires → the agent runs `agentmap --any <query>` and

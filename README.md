@@ -158,7 +158,7 @@ serial-greps**. You wire it once — then it stays current on its own, and stays
 
 ### 1. Auto-refresh on commit
 
-[`hooks/post-commit`](./hooks/post-commit) rebuilds `.claude/agentmap.json` after each
+[`hooks/post-commit`](./hooks/post-commit) rebuilds `.claude/agentmap/map.json` after each
 commit, detached + silenced so it never slows the commit. It skips during
 rebase/merge/cherry-pick and no-ops if Node is missing.
 
@@ -169,7 +169,7 @@ npx @dstwn/agentmap-php --install-hooks
 ```
 
 This copies `hooks/post-commit` into `.git/hooks/`, sets it executable, ensures
-`.claude/agentmap.json` is in `.gitignore`, and **auto-wires the `PreToolUse` nudge
+`.claude/agentmap/` (entire map directory) is in `.gitignore`, and **auto-wires the `PreToolUse` nudge
 hook into `.claude/settings.json`** (merge-safe + idempotent) so map enforcement is
 on by default — no manual paste. Manual alternative for just the post-commit hook:
 
@@ -289,7 +289,7 @@ git clone https://github.com/dstwn/agentmap-php
 node /path/to/agentmap-php/agentmap.mjs --any <query>
 ```
 
-The first run builds and caches the map to `.claude/agentmap.json` (add it to
+The first run builds and caches the map to `.claude/agentmap/map.json` (add `.claude/agentmap/` to
 `.gitignore`). Subsequent runs serve the cache when the tree is clean and `HEAD` is
 unchanged, and silently rebuild from disk when there are uncommitted `.ts/.tsx/.js/.php/.blade.php`
 edits — so queries always reflect your in-flight work.
@@ -584,7 +584,7 @@ $ node agentmap.mjs --print | jq '.hubs[0]'
 | `--help` / `-h` | Print a usage block listing every flag and exit 0. |
 | `--version` / `-v` | Print the version from `package.json` and exit 0. |
 | `--json` | **Global modifier.** When present, every command prints exactly one JSON object to stdout (no prose). Shapes vary per command: `--json --hubs` → `{command,fileCount,sha,hubs:[string]}`, `--json --find X` → `{command,query,matches:[{file,name,kind}]}`, `--json --relates X` → `{command,file,pagerank,exports,imports,dependents,related}`, `--json --any X` → `{command,query,kind,…payload}`, etc. Bare `--json` (no query flag) → `{command:"build",fileCount,features,topHub}`. |
-| `--install-hooks` | Copy `hooks/post-commit` into `.git/hooks/` (chmod 0755), ensure `.claude/agentmap.json` is in `.gitignore`, and auto-wire the Claude Code `PreToolUse(Grep)` nudge into `.claude/settings.json` (merge-safe + idempotent). Exit 0 on success, stderr + exit 1 on failure. |
+| `--install-hooks` | Copy `hooks/post-commit` into `.git/hooks/` (chmod 0755), ensure `.claude/agentmap/` is in `.gitignore`, and auto-wire the Claude Code `PreToolUse(Grep)` nudge into `.claude/settings.json` (merge-safe + idempotent). Exit 0 on success, stderr + exit 1 on failure. |
 | `--hook-status` | Report whether the post-commit hook, PreToolUse nudge, and `.gitignore` entry are installed (no writes). |
 | `--doctor` | Read-only harness health report: git/Claude hook wiring, installed skills + Cursor rule freshness vs `package.json` version, MCP config entries for OpenCode/Antigravity, and map-cache presence/freshness hints. Always exits 0; suggests fix commands (`agentmap --install-hooks`, `--install-skill`, `--setup-mcp`, `agentmap`) but never runs them. Combine with `--json` for a structured report. |
 | `--install-skill` | Install skills + always-on docs/hooks per platform (`--platform claude\|cursor\|codex\|opencode\|gemini\|antigravity\|copilot\|agents\|all`, default `all`; `--project` default, or `--global`; `--dry-run` preview). |

@@ -1,6 +1,6 @@
 ## agentmap (repo map)
 
-This project can use **agentmap-php** — a queryable import/symbol map for PHP/Laravel and TS/JS at `.claude/agentmap.json`. Laravel-aware (facades, Eloquent, routes, Blade, Livewire, DDD, Artisan, middleware, migrations).
+This project can use **agentmap-php** — a queryable import/symbol map for PHP/Laravel and TS/JS at `.claude/agentmap/map.json` (legacy fallback `.claude/agentmap.json`). Laravel-aware (facades, Eloquent, routes, Blade, Livewire, DDD, Artisan, middleware, migrations).
 
 **Before Grep/Glob for structural questions** (where is a symbol, who imports a file, reuse check, blast radius), prefer:
 
@@ -14,7 +14,7 @@ agentmap --map --tokens 400     # cheap repo orientation
 Use Read/Grep directly when:
 
 1. agentmap already oriented you and you need exact lines to edit
-2. The map is missing — run `agentmap` once to build `.claude/agentmap.json`
+2. The map is missing — run `agentmap` once to build `.claude/agentmap/map.json`
 3. Searching raw strings, logs, or config values
 
 **MCP (optional):** `agentmap --mcp` exposes the same queries as tools.

@@ -51,7 +51,7 @@ agentmap --hubs
 agentmap --json --any <query>
 ```
 
-Install: clone the `agentmap-php` fork and run `node /path/to/agentmap.mjs`. Map cache: `.claude/agentmap.json` (gitignored).
+Install: clone the `agentmap-php` fork and run `node /path/to/agentmap.mjs`. Map cache: `.claude/agentmap/map.json` (gitignored; legacy fallback `.claude/agentmap.json`).
 
 ## Agent platforms
 
